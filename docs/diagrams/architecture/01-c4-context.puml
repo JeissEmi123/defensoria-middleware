@@ -1,0 +1,28 @@
+@startuml C4_Context
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
+
+LAYOUT_WITH_LEGEND()
+
+title Context Diagram - Sistema de Autenticación y Autorización
+
+Person(admin, "Administrador", "Gestiona usuarios, roles y permisos del sistema")
+Person(user, "Usuario Final", "Accede a aplicaciones protegidas mediante autenticación")
+Person(auditor, "Auditor", "Revisa logs y eventos de seguridad")
+
+System(middleware, "Defensoria Middleware", "Sistema centralizado de autenticación, autorización y gestión de identidades con soporte multi-proveedor")
+
+System_Ext(ldap, "Active Directory/LDAP", "Directorio corporativo de usuarios")
+System_Ext(azure, "Azure AD", "Proveedor de identidad en la nube")
+System_Ext(apps, "Aplicaciones Cliente", "Sistemas que consumen el middleware")
+System_Ext(smtp, "Servidor SMTP", "Envío de correos para recuperación de contraseña")
+
+Rel(admin, middleware, "Gestiona usuarios y permisos", "HTTPS/REST")
+Rel(user, middleware, "Autentica y obtiene tokens", "HTTPS/REST")
+Rel(auditor, middleware, "Consulta logs de auditoría", "HTTPS/REST")
+
+Rel(middleware, ldap, "Valida credenciales", "LDAP/LDAPS")
+Rel(middleware, azure, "OAuth2/OIDC", "HTTPS")
+Rel(apps, middleware, "Valida tokens JWT", "HTTPS/REST")
+Rel(middleware, smtp, "Envía emails", "SMTP/TLS")
+
+@enduml

@@ -1,0 +1,56 @@
+@startuml C4_Container_Modern
+!theme materia-outline
+
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+LAYOUT_TOP_DOWN
+
+title Diagrama de Contenedores - Middleware Defensoría
+
+' Actores
+Person(user, "Usuario", "Usuario final del sistema (ej. defensor, ciudadano).")
+Person(admin, "Administrador", "Gestiona la configuración del sistema, roles y usuarios.")
+
+' Sistemas Externos
+System_Ext(ldap, "Directorio Activo", "LDAP/LDAPS", "Sistema de autenticación corporativo.")
+System_Ext(azure, "Azure AD", "OAuth2/OIDC", "Proveedor de identidad en la nube.")
+System_Ext(smtp, "Servidor SMTP", "SMTP", "Servicio para el envío de notificaciones por correo electrónico.")
+
+System_Boundary(middleware, "Middleware de Autenticación y Autorización") {
+
+    Container_Boundary(api_container, "API Monolítica") {
+        Component(api_gateway, "API Endpoints", "FastAPI", "Expone la API REST y enruta las peticiones a los servicios internos.")
+        Component(auth_service, "Servicio de Autenticación", "Python", "Orquesta la autenticación con múltiples proveedores (Local, LDAP, Azure AD).")
+        Component(rbac_service, "Servicio RBAC", "Python", "Gestiona la lógica de roles, permisos y control de acceso.")
+        Component(user_service, "Servicio de Usuarios", "Python", "Gestiona el ciclo de vida y los datos de los usuarios.")
+        Component(session_service, "Servicio de Sesiones", "Python", "Crea, valida y gestiona tokens JWT.")
+        
+        Rel(api_gateway, auth_service, "Usa")
+        Rel(api_gateway, rbac_service, "Usa")
+        Rel(api_gateway, user_service, "Usa")
+        Rel(api_gateway, session_service, "Usa")
+    }
+    
+    ContainerDb(db, "Base de Datos", "PostgreSQL 15+", "Almacena datos de usuarios, roles, permisos, sesiones y logs de auditoría.")
+
+    ' Relaciones internas al límite del sistema
+    Rel(auth_service, db, "Lee/Escribe", "SQL")
+    Rel(rbac_service, db, "Lee/Escribe", "SQL")
+    Rel(user_service, db, "Lee/Escribe", "SQL")
+    Rel(session_service, db, "Lee/Escribe", "SQL")
+}
+
+' Relaciones de Actores al Sistema
+Rel(user, api_gateway, "Realiza autenticación y accede a recursos protegidos", "HTTPS/JSON")
+Rel(admin, api_gateway, "Administra usuarios, roles y permisos", "HTTPS/JSON")
+
+' Relaciones del Sistema a Sistemas Externos
+Rel(auth_service, ldap, "Valida credenciales", "LDAP/LDAPS")
+Rel(auth_service, azure, "Delega autenticación", "HTTPS/OIDC")
+Rel(user_service, smtp, "Envía notificaciones", "SMTP")
+
+' Footer
+footer Documento: Diagrama de Contenedores C4 | Versión: 2.0 | Fecha: %date("dd-MM-yyyy")%
+@enduml

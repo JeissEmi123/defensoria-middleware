@@ -1,0 +1,29 @@
+====================================
+CREDENCIALES DE DESPLIEGUE GCP
+====================================
+Fecha: 2025-01-24
+Proyecto: sat-defensoriapueblo
+
+====================================
+POSTGRESQL
+====================================
+Root Password: DefensoriaRoot2024!
+App User: app_user
+App Password: 160ad94e587af20af57bb5fc30c9fbd0
+
+====================================
+SECRETS (Secret Manager)
+====================================
+SECRET_KEY: 97fb45863ed4834fbb95a711b5bfd34c2efea71b918a8158e438aa1ab051e23d
+JWT_SECRET_KEY: 3492176a1c6cef3c40425816e9a49dca623d9322b0dc6fcda2b29d3c8177a7b4
+JWT_REFRESH_SECRET_KEY: a4b90cb1992c0c9bc30ac4dca4c466002ca816bd15ab60477e6fe34db4964522
+ADMIN_DEFAULT_PASSWORD: 03496d62c53675f87c5516a1bbd7636e
+POSTGRES_PASSWORD: 160ad94e587af20af57bb5fc30c9fbd0
+
+====================================
+IMPORTANTE
+====================================
+- Guarda este archivo en un lugar seguro
+- NO lo subas a Git (ya está en .gitignore)
+- Elimínalo después de guardar en password manager
+====================================

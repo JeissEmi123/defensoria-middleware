@@ -1,0 +1,335 @@
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0" version="29.1.1">
+  <diagram name="Repository Pattern" id="repository-pattern-professional">
+    <mxGraphModel dx="2800" dy="1600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        
+        <!-- Main Container -->
+        <mxCell id="main-container" value="" style="shape=mxgraph.gcp2.doubleRect;strokeColor=#dddddd;shadow=1;strokeWidth=1;rounded=1;absoluteArcSize=1;arcSize=2;fontStyle=1;fillColor=#FAFAFA;" vertex="1" parent="1">
+          <mxGeometry x="50" y="50" width="1700" height="1300" as="geometry" />
+        </mxCell>
+        
+        <!-- Title Section -->
+        <mxCell id="title-section" value="&lt;b style=&quot;font-size: 24px;&quot;&gt;REPOSITORY PATTERN&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 14px; color: #666;&quot;&gt;Domain Driven Design + Hexagonal Architecture - Defensoría del Pueblo&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="550" y="70" width="700" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- SERVICE LAYER Container -->
+        <mxCell id="service-layer-container" value="" style="shape=mxgraph.gcp2.doubleRect;strokeColor=#6c8ebf;shadow=1;strokeWidth=3;rounded=1;absoluteArcSize=1;arcSize=2;fontStyle=1;fillColor=#dae8fc;" vertex="1" parent="1">
+          <mxGeometry x="100" y="160" width="1600" height="280" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="service-layer-title" value="&lt;b style=&quot;color: #1976D2;&quot;&gt;SERVICE LAYER&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 12px; color: #666;&quot;&gt;Application Business Logic&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="110" y="170" width="200" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- AuthService Box -->
+        <mxCell id="auth-service-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1976D2;strokeWidth=2;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="130" y="240" width="360" height="180" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="auth-service-icon" value="" style="points=[];aspect=fixed;html=1;align=center;shadow=0;dashed=0;fillColor=#1976D2;strokeColor=none;shape=mxgraph.alibaba_cloud.cas_ssl_central_authentication_service;" vertex="1" parent="1">
+          <mxGeometry x="150" y="260" width="50" height="42" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="auth-service-title" value="&lt;b&gt;AuthService&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #666;&quot;&gt;Autenticación&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="210" y="255" width="150" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="auth-service-code" value="&lt;div style=&quot;font-size: 10px; font-family: Consolas, monospace; text-align: left; padding: 8px; background: #f5f5f5; border-radius: 4px;&quot;&gt;def __init__(usuario_repo, sesion_repo)&lt;br&gt;async def autenticar_usuario(username, pwd)&lt;br&gt;async def validar_token(token)&lt;br&gt;async def cerrar_sesion(session_id)&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="150" y="320" width="320" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- RBACService Box -->
+        <mxCell id="rbac-service-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1976D2;strokeWidth=2;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="240" width="360" height="180" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="rbac-service-icon" value="" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#DD344C;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.permissions;" vertex="1" parent="1">
+          <mxGeometry x="540" y="260" width="48" height="48" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="rbac-service-title" value="&lt;b&gt;RBACService&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #666;&quot;&gt;Control de Acceso&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="600" y="255" width="150" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="rbac-service-code" value="&lt;div style=&quot;font-size: 10px; font-family: Consolas, monospace; text-align: left; padding: 8px; background: #f5f5f5; border-radius: 4px;&quot;&gt;def __init__(rol_repo, permiso_repo)&lt;br&gt;async def obtener_permisos_usuario(user_id)&lt;br&gt;async def verificar_permiso(user_id, codigo)&lt;br&gt;async def asignar_rol(user_id, rol_id)&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="540" y="320" width="320" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- UserService Box -->
+        <mxCell id="user-service-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1976D2;strokeWidth=2;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="910" y="240" width="360" height="180" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="user-service-icon" value="" style="aspect=fixed;sketch=0;html=1;dashed=0;whitespace=wrap;verticalLabelPosition=bottom;verticalAlign=top;fillColor=#2875E2;strokeColor=#ffffff;points=[[0.005,0.63,0],[0.1,0.2,0],[0.9,0.2,0],[0.5,0,0],[0.995,0.63,0],[0.72,0.99,0],[0.5,1,0],[0.28,0.99,0]];shape=mxgraph.kubernetes.icon2;prIcon=user" vertex="1" parent="1">
+          <mxGeometry x="930" y="255" width="50" height="48" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="user-service-title" value="&lt;b&gt;UserService&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #666;&quot;&gt;Gestión Usuarios&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="990" y="255" width="150" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="user-service-code" value="&lt;div style=&quot;font-size: 10px; font-family: Consolas, monospace; text-align: left; padding: 8px; background: #f5f5f5; border-radius: 4px;&quot;&gt;def __init__(usuario_repo)&lt;br&gt;async def crear_usuario(data)&lt;br&gt;async def actualizar_usuario(user_id, data)&lt;br&gt;async def obtener_usuario(user_id)&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="930" y="320" width="320" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- PasswordResetService Box -->
+        <mxCell id="password-service-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1976D2;strokeWidth=2;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="240" width="360" height="180" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="password-service-icon" value="" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#7AA116;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.key_management_service;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="258" width="48" height="48" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="password-service-title" value="&lt;b&gt;PasswordResetService&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #666;&quot;&gt;Recuperación&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="255" width="160" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="password-service-code" value="&lt;div style=&quot;font-size: 10px; font-family: Consolas, monospace; text-align: left; padding: 8px; background: #f5f5f5; border-radius: 4px;&quot;&gt;def __init__(usuario_repo, token_repo)&lt;br&gt;async def solicitar_reset(email)&lt;br&gt;async def validar_token(token)&lt;br&gt;async def cambiar_password(token, pwd)&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="320" width="320" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- DOMAIN LAYER Container (Ports/Interfaces) -->
+        <mxCell id="domain-layer-container" value="" style="shape=mxgraph.gcp2.doubleRect;strokeColor=#9673a6;shadow=1;strokeWidth=3;rounded=1;absoluteArcSize=1;arcSize=2;fontStyle=1;fillColor=#e1d5e7;" vertex="1" parent="1">
+          <mxGeometry x="100" y="480" width="1600" height="320" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="domain-layer-title" value="&lt;b style=&quot;color: #7B1FA2;&quot;&gt;DOMAIN LAYER - PORTS&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 12px; color: #666;&quot;&gt;Repository Interfaces (Abstract Base Classes)&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="110" y="490" width="300" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- IUsuarioRepository -->
+        <mxCell id="iusuario-repo-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#7B1FA2;strokeWidth=2;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="130" y="560" width="360" height="220" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="iusuario-repo-icon" value="" style="shape=rect;fillColor=#7B1FA2;aspect=fixed;resizable=0;labelPosition=center;verticalLabelPosition=bottom;align=center;verticalAlign=top;strokeColor=none;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="150" y="575" width="48" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="iusuario-repo-icon-inner" value="" style="fillColor=#ffffff;strokeColor=none;dashed=0;outlineConnect=0;html=1;part=1;shape=mxgraph.ibm_cloud.repo--source-code" vertex="1" parent="iusuario-repo-icon">
+          <mxGeometry x="12" y="12" width="24" height="24" relative="1" as="geometry">
+            <mxPoint x="12" y="12" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="iusuario-repo-title" value="&lt;b&gt;IUsuarioRepository&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #666;&quot;&gt;Contrato Usuarios&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="210" y="575" width="160" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="iusuario-repo-methods" value="&lt;div style=&quot;font-size: 10px; font-family: Consolas, monospace; text-align: left; padding: 8px; background: #f5f5f5; border-radius: 4px;&quot;&gt;@abstractmethod&lt;br&gt;async def get_by_username(username: str)&lt;br&gt;async def get_by_email(email: str)&lt;br&gt;async def is_username_taken(username: str)&lt;br&gt;async def get_with_roles(user_id: int)&lt;br&gt;async def update_login_attempts(user_id)&lt;br&gt;async def create(data: dict)&lt;br&gt;async def update(user_id, data: dict)&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="150" y="640" width="320" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- IRolRepository -->
+        <mxCell id="irol-repo-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#7B1FA2;strokeWidth=2;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="560" width="360" height="220" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="irol-repo-icon" value="" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#7B1FA2;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.addon;" vertex="1" parent="1">
+          <mxGeometry x="540" y="575" width="48" height="48" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="irol-repo-title" value="&lt;b&gt;IRolRepository&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #666;&quot;&gt;Contrato Roles&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="600" y="575" width="160" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="irol-repo-methods" value="&lt;div style=&quot;font-size: 10px; font-family: Consolas, monospace; text-align: left; padding: 8px; background: #f5f5f5; border-radius: 4px;&quot;&gt;@abstractmethod&lt;br&gt;async def get_by_nombre(nombre: str)&lt;br&gt;async def get_with_permisos(rol_id: int)&lt;br&gt;async def asignar_permiso(rol_id, perm_id)&lt;br&gt;async def remover_permiso(rol_id, perm_id)&lt;br&gt;async def get_all_active()&lt;br&gt;async def create(data: dict)&lt;br&gt;async def delete(rol_id: int)&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="540" y="640" width="320" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- IPermisoRepository -->
+        <mxCell id="ipermiso-repo-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#7B1FA2;strokeWidth=2;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="910" y="560" width="360" height="220" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="ipermiso-repo-icon" value="" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#7B1FA2;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.checklist;" vertex="1" parent="1">
+          <mxGeometry x="930" y="575" width="48" height="48" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="ipermiso-repo-title" value="&lt;b&gt;IPermisoRepository&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #666;&quot;&gt;Contrato Permisos&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="990" y="575" width="160" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="ipermiso-repo-methods" value="&lt;div style=&quot;font-size: 10px; font-family: Consolas, monospace; text-align: left; padding: 8px; background: #f5f5f5; border-radius: 4px;&quot;&gt;@abstractmethod&lt;br&gt;async def get_by_codigo(codigo: str)&lt;br&gt;async def get_user_permisos(user_id: int)&lt;br&gt;async def user_has_permiso(user_id, codigo)&lt;br&gt;async def get_rol_permisos(rol_id: int)&lt;br&gt;async def create(permiso_data: dict)&lt;br&gt;async def get_all()&lt;br&gt;async def delete(permiso_id: int)&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="930" y="640" width="320" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- ISesionRepository -->
+        <mxCell id="isesion-repo-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#7B1FA2;strokeWidth=2;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="560" width="360" height="220" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="isesion-repo-icon" value="" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#7B1FA2;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.managed_workflows_for_apache_airflow;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="575" width="48" height="48" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="isesion-repo-title" value="&lt;b&gt;ISesionRepository&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #666;&quot;&gt;Contrato Sesiones&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="575" width="160" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="isesion-repo-methods" value="&lt;div style=&quot;font-size: 10px; font-family: Consolas, monospace; text-align: left; padding: 8px; background: #f5f5f5; border-radius: 4px;&quot;&gt;@abstractmethod&lt;br&gt;async def get_active_sessions(user_id: int)&lt;br&gt;async def invalidate_session(session_id)&lt;br&gt;async def invalidate_user_sessions(user_id)&lt;br&gt;async def create(user_id, token, ip)&lt;br&gt;async def cleanup_expired()&lt;br&gt;async def get_by_token(token: str)&lt;br&gt;async def update_last_activity(session_id)&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="640" width="320" height="130" as="geometry" />
+        </mxCell>
+
+        <!-- INFRASTRUCTURE LAYER Container -->
+        <mxCell id="infra-layer-container" value="" style="shape=mxgraph.ibm.box;prType=classic;fontStyle=0;verticalAlign=top;align=left;spacingLeft=32;spacingTop=4;fillColor=#d5e8d4;rounded=0;whiteSpace=wrap;html=1;strokeColor=#82b366;strokeWidth=4;dashed=0;container=1;spacing=-4;collapsible=0;expand=0;recursiveResize=0;" vertex="1" parent="1">
+          <mxGeometry x="100" y="840" width="1600" height="280" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="infra-layer-title" value="&lt;b style=&quot;color: #388E3C;&quot;&gt;INFRASTRUCTURE LAYER&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 12px; color: #666;&quot;&gt;SQLAlchemy ORM Implementations&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="110" y="850" width="280" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- SQLAlchemyUsuarioRepository -->
+        <mxCell id="impl-usuario-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#388E3C;strokeWidth=2;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="130" y="920" width="360" height="180" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="impl-usuario-icon" value="" style="image;sketch=0;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/mscae/Azure_Database_for_PostgreSQL_servers.svg;" vertex="1" parent="1">
+          <mxGeometry x="150" y="935" width="48" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="impl-usuario-title" value="&lt;b&gt;SQLAlchemyUsuarioRepository&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #666;&quot;&gt;Implementación ORM&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="210" y="935" width="250" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="impl-usuario-desc" value="&lt;div style=&quot;font-size: 11px; text-align: left; padding: 10px;&quot;&gt;Implementa IUsuarioRepository&lt;br&gt;Usa SQLAlchemy ORM&lt;br&gt;Maneja relaciones con Roles&lt;br&gt;Queries optimizadas con joins&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=#E8F5E9;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="150" y="1000" width="320" height="85" as="geometry" />
+        </mxCell>
+
+        <!-- SQLAlchemyRolRepository -->
+        <mxCell id="impl-rol-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#388E3C;strokeWidth=2;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="520" y="920" width="360" height="180" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="impl-rol-icon" value="" style="image;sketch=0;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/mscae/Azure_Database_for_PostgreSQL_servers.svg;" vertex="1" parent="1">
+          <mxGeometry x="540" y="935" width="48" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="impl-rol-title" value="&lt;b&gt;SQLAlchemyRolRepository&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #666;&quot;&gt;Implementación ORM&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="600" y="935" width="250" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="impl-rol-desc" value="&lt;div style=&quot;font-size: 11px; text-align: left; padding: 10px;&quot;&gt;Implementa IRolRepository&lt;br&gt;Usa SQLAlchemy ORM&lt;br&gt;Maneja relaciones con Permisos&lt;br&gt;Queries optimizadas&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=#E8F5E9;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="540" y="1000" width="320" height="85" as="geometry" />
+        </mxCell>
+
+        <!-- SQLAlchemyPermisoRepository -->
+        <mxCell id="impl-permiso-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#388E3C;strokeWidth=2;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="910" y="920" width="360" height="180" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="impl-permiso-icon" value="" style="image;sketch=0;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/mscae/Azure_Database_for_PostgreSQL_servers.svg;" vertex="1" parent="1">
+          <mxGeometry x="930" y="935" width="48" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="impl-permiso-title" value="&lt;b&gt;SQLAlchemyPermisoRepository&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #666;&quot;&gt;Implementación ORM&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="990" y="935" width="250" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="impl-permiso-desc" value="&lt;div style=&quot;font-size: 11px; text-align: left; padding: 10px;&quot;&gt;Implementa IPermisoRepository&lt;br&gt;Usa SQLAlchemy ORM&lt;br&gt;Consulta permisos por usuario&lt;br&gt;Caché de permisos frecuentes&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=#E8F5E9;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="930" y="1000" width="320" height="85" as="geometry" />
+        </mxCell>
+
+        <!-- SQLAlchemySesionRepository -->
+        <mxCell id="impl-sesion-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#388E3C;strokeWidth=2;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="1300" y="920" width="360" height="180" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="impl-sesion-icon" value="" style="image;sketch=0;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/mscae/Azure_Database_for_PostgreSQL_servers.svg;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="935" width="48" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="impl-sesion-title" value="&lt;b&gt;SQLAlchemySesionRepository&lt;/b&gt;&lt;br&gt;&lt;span style=&quot;font-size: 11px; color: #666;&quot;&gt;Implementación ORM&lt;/span&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="935" width="250" height="50" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="impl-sesion-desc" value="&lt;div style=&quot;font-size: 11px; text-align: left; padding: 10px;&quot;&gt;Implementa ISesionRepository&lt;br&gt;Usa SQLAlchemy ORM&lt;br&gt;Auto-limpieza de sesiones&lt;br&gt;Tracking de IP y User Agent&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=#E8F5E9;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="1320" y="1000" width="320" height="85" as="geometry" />
+        </mxCell>
+
+        <!-- ARROWS: Services to Interfaces -->
+        <mxCell id="arrow-auth-to-usuario" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#1976D2;strokeWidth=2;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="auth-service-box" target="iusuario-repo-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="arrow-auth-to-sesion" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#1976D2;strokeWidth=2;dashed=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="auth-service-box">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1480" y="560" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="510" y="330" />
+              <mxPoint x="510" y="520" />
+              <mxPoint x="1480" y="520" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="arrow-rbac-to-rol" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#1976D2;strokeWidth=2;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="rbac-service-box" target="irol-repo-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="arrow-rbac-to-permiso" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#1976D2;strokeWidth=2;dashed=1;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="rbac-service-box" target="ipermiso-repo-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="arrow-user-to-usuario" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#1976D2;strokeWidth=2;dashed=1;exitX=0.25;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="user-service-box">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="310" y="560" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="1000" y="460" />
+              <mxPoint x="310" y="460" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        
+        <mxCell id="arrow-password-to-usuario" value="" style="endArrow=classic;html=1;rounded=0;strokeColor=#1976D2;strokeWidth=2;dashed=1;exitX=0;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="password-service-box">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="310" y="560" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="1300" y="450" />
+              <mxPoint x="310" y="450" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ARROWS: Interfaces to Implementations -->
+        <mxCell id="arrow-iusuario-to-impl" value="implements" style="endArrow=block;html=1;rounded=0;strokeColor=#388E3C;strokeWidth=2;endFill=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=11;fontColor=#388E3C;" edge="1" parent="1" source="iusuario-repo-box" target="impl-usuario-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="arrow-irol-to-impl" value="implements" style="endArrow=block;html=1;rounded=0;strokeColor=#388E3C;strokeWidth=2;endFill=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=11;fontColor=#388E3C;" edge="1" parent="1" source="irol-repo-box" target="impl-rol-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="arrow-ipermiso-to-impl" value="implements" style="endArrow=block;html=1;rounded=0;strokeColor=#388E3C;strokeWidth=2;endFill=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=11;fontColor=#388E3C;" edge="1" parent="1" source="ipermiso-repo-box" target="impl-permiso-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="arrow-isesion-to-impl" value="implements" style="endArrow=block;html=1;rounded=0;strokeColor=#388E3C;strokeWidth=2;endFill=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;fontSize=11;fontColor=#388E3C;" edge="1" parent="1" source="isesion-repo-box" target="impl-sesion-box">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Legend Box -->
+        <mxCell id="legend-box" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#cccccc;strokeWidth=1;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="1140" width="1600" height="100" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="legend-title" value="&lt;b&gt;FLUJOS Y BENEFICIOS&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=14;fontColor=#333;" vertex="1" parent="1">
+          <mxGeometry x="120" y="1150" width="200" height="30" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="legend-content" value="&lt;div style=&quot;font-size: 12px; line-height: 1.6;&quot;&gt;&lt;b style=&quot;color: #1976D2;&quot;&gt;Service Layer:&lt;/b&gt; Contiene la lógica de negocio, depende solo de interfaces (Ports)&lt;br&gt;&lt;b style=&quot;color: #7B1FA2;&quot;&gt;Domain Ports:&lt;/b&gt; Contratos abstractos (ABC) que definen operaciones de persistencia&lt;br&gt;&lt;b style=&quot;color: #388E3C;&quot;&gt;Infrastructure:&lt;/b&gt; Implementaciones concretas usando SQLAlchemy ORM + PostgreSQL&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="120" y="1180" width="800" height="60" as="geometry" />
+        </mxCell>
+        
+        <mxCell id="legend-benefits" value="&lt;div style=&quot;font-size: 11px; text-align: left; padding: 10px; background: #f5f5f5; border-radius: 4px;&quot;&gt;&lt;b&gt;Beneficios:&lt;/b&gt; Testabilidad | Intercambiabilidad | Dependency Inversion (SOLID) | Encapsulación&lt;br&gt;&lt;b&gt;Stack:&lt;/b&gt; Python ABC | SQLAlchemy ORM | PostgreSQL | Dependency Injection&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="950" y="1160" width="720" height="65" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
