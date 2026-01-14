@@ -1,0 +1,13 @@
+name: defensoria-prod-main
+description: Deploy to production on main branch push
+github:
+  owner: agata-dp
+  name: sds-dp
+  push:
+    branch: ^main$
+filename: cloudbuild-prod.yaml
+substitutions:
+  _REGION: us-central1
+  _SERVICE_NAME: defensoria-middleware-prod
+  _MIN_INSTANCES: "1"
+  _MAX_INSTANCES: "10"

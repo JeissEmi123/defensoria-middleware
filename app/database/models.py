@@ -1,10 +1,10 @@
 # Models file
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, ForeignKey, Table, Index, Enum, JSON
-from sqlalchemy.orm import relationship, declarative_base
+from sqlalchemy.orm import relationship
 from datetime import datetime, UTC
 import enum
 
-Base = declarative_base()
+from app.database.session import Base
 
 
 class TipoAutenticacion(str, enum.Enum):
@@ -174,136 +174,3 @@ class ConfiguracionSistema(Base):
 
     def __repr__(self):
         return f"<ConfiguracionSistema(id={self.id}, clave='{self.clave}')>"
-
-
-# ==================== MODELOS DE DETECCIÓN DE SEÑALES ====================
-
-class CategoriaAnalisisSenal(Base):
-    """
-    Categoría principal de análisis de señales digitales.
-    Define los tipos de conductas vulneratorias que se monitorean.
-    """
-    __tablename__ = 'categoria_analisis_senal'
-    
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    nombre_categoria_analisis = Column(String(150), nullable=False, index=True)
-    propiedades_conductas_vulneratorias = Column(JSON, nullable=True, 
-        comment='Definiciones y propiedades de las conductas vulneratorias')
-    palabras_clave_categoria = Column(JSON, nullable=True,
-        comment='Lista de palabras clave asociadas a esta categoría')
-    hashtags_categoria = Column(JSON, nullable=True,
-        comment='Hashtags relevantes para detección')
-    emoticones_categoria = Column(JSON, nullable=True,
-        comment='Emoticones asociados a esta categoría')
-    frases_categoria = Column(JSON, nullable=True,
-        comment='Frases típicas de esta categoría')
-    activo = Column(Boolean, nullable=False, default=True, index=True)
-    fecha_creacion = Column(DateTime, nullable=False, default=datetime.now)
-    fecha_actualizacion = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
-    
-    # Relaciones
-    senales_detectadas = relationship('SenalDetectada', back_populates='categoria_analisis')
-    
-    def __repr__(self):
-        return f"<CategoriaAnalisisSenal(id={self.id}, nombre='{self.nombre_categoria_analisis}')>"
-
-
-class CategoriaSenal(Base):
-    """
-    Categoría jerárquica de señales (RUIDO, PARACRISIS, CRISIS, etc.).
-    Permite clasificación multinivel de señales detectadas.
-    """
-    __tablename__ = 'categoria_senal'
-    
-    id_categoria_senal = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    nombre_categoria_senal = Column(String(100), nullable=False, index=True)
-    parent_categoria_senal_id = Column(Integer, ForeignKey('categoria_senal.id_categoria_senal', ondelete='SET NULL'), 
-        nullable=True, index=True)
-    nivel = Column(Integer, nullable=False, index=True, 
-        comment='Nivel jerárquico: 1=principal, 2=subcategoría, etc.')
-    color = Column(String(50), nullable=True,
-        comment='Color representativo en hex (#RRGGBB)')
-    descripcion = Column(Text, nullable=True)
-    activo = Column(Boolean, nullable=False, default=True, index=True)
-    fecha_creacion = Column(DateTime, nullable=False, default=datetime.now)
-    fecha_actualizacion = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
-    
-    # Relaciones
-    parent = relationship('CategoriaSenal', remote_side=[id_categoria_senal], backref='subcategorias')
-    senales_detectadas = relationship('SenalDetectada', back_populates='categoria_senal')
-    
-    def __repr__(self):
-        return f"<CategoriaSenal(id={self.id_categoria_senal}, nombre='{self.nombre_categoria_senal}', nivel={self.nivel})>"
-
-
-class SenalDetectada(Base):
-    """
-    Señal detectada en plataformas digitales.
-    Registro principal de eventos de riesgo detectados.
-    """
-    __tablename__ = 'senal_detectada'
-    
-    id_senal_detectada = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    fecha_deteccion = Column(DateTime, nullable=False, default=datetime.now, index=True)
-    id_categoria_senal = Column(Integer, ForeignKey('categoria_senal.id_categoria_senal', ondelete='SET NULL'), 
-        nullable=True, index=True)
-    id_categoria_analisis = Column(Integer, ForeignKey('categoria_analisis_senal.id', ondelete='SET NULL'), 
-        nullable=True, index=True)
-    score_riesgo = Column(Integer, nullable=True, index=True,
-        comment='Score de riesgo: 0-100')
-    categorias_observacion = Column(JSON, nullable=True,
-        comment='Categorías adicionales y metadatos de observación')
-    fecha_actualizacion = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now)
-    plataformas_digitales = Column(JSON, nullable=True,
-        comment='Lista de plataformas donde se detectó la señal')
-    contenido_detectado = Column(Text, nullable=True,
-        comment='Contenido que generó la alerta')
-    metadatos = Column(JSON, nullable=True,
-        comment='Metadatos adicionales: autor, ubicación, etc.')
-    estado = Column(String(50), nullable=False, default='DETECTADA', index=True,
-        comment='Estados: DETECTADA, EN_REVISION, VALIDADA, RECHAZADA, RESUELTA')
-    url_origen = Column(String(500), nullable=True,
-        comment='URL del contenido original')
-    usuario_asignado_id = Column(Integer, ForeignKey('usuarios.id', ondelete='SET NULL'), 
-        nullable=True, index=True)
-    fecha_resolucion = Column(DateTime, nullable=True)
-    notas_resolucion = Column(Text, nullable=True)
-    
-    # Relaciones
-    categoria_senal = relationship('CategoriaSenal', back_populates='senales_detectadas')
-    categoria_analisis = relationship('CategoriaAnalisisSenal', back_populates='senales_detectadas')
-    usuario_asignado = relationship('Usuario')
-    historial = relationship('HistorialSenal', back_populates='senal', cascade='all, delete-orphan')
-    
-    def __repr__(self):
-        return f"<SenalDetectada(id={self.id_senal_detectada}, estado='{self.estado}', score={self.score_riesgo})>"
-
-
-class HistorialSenal(Base):
-    """
-    Historial de cambios y acciones sobre señales detectadas.
-    Proporciona trazabilidad completa de las señales.
-    """
-    __tablename__ = 'historial_senal'
-    
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
-    id_senal_detectada = Column(Integer, ForeignKey('senal_detectada.id_senal_detectada', ondelete='CASCADE'), 
-        nullable=False, index=True)
-    usuario_id = Column(Integer, ForeignKey('usuarios.id', ondelete='SET NULL'), 
-        nullable=True, index=True)
-    accion = Column(String(100), nullable=False, index=True,
-        comment='Tipo de acción: CREACION, ASIGNACION, CAMBIO_ESTADO, RESOLUCION, etc.')
-    descripcion = Column(Text, nullable=True)
-    estado_anterior = Column(String(50), nullable=True)
-    estado_nuevo = Column(String(50), nullable=True)
-    datos_adicionales = Column(JSON, nullable=True,
-        comment='Datos adicionales de la acción')
-    fecha_registro = Column(DateTime, nullable=False, default=datetime.now, index=True)
-    ip_address = Column(String(45), nullable=True)
-    
-    # Relaciones
-    senal = relationship('SenalDetectada', back_populates='historial')
-    usuario = relationship('Usuario')
-    
-    def __repr__(self):
-        return f"<HistorialSenal(id={self.id}, senal_id={self.id_senal_detectada}, accion='{self.accion}')>"

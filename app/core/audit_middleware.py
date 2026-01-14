@@ -5,8 +5,8 @@ from typing import Optional
 import time
 from datetime import datetime
 
-from app.core.logging import audit_logger, get_logger
-from app.database.session import get_db_session
+from app.core.logging import audit_logger, get_logger, request_id_var, user_id_var
+from app.database.session import AsyncSessionLocal
 from app.database.models import EventoAuditoria
 from app.auth.tokens import TokenManager
 
@@ -46,10 +46,15 @@ class AuditMiddleware(BaseHTTPMiddleware):
             token = auth_header.replace("Bearer ", "")
             try:
                 payload = token_manager.validar_access_token(token)
-                usuario_id = payload.get("sub")
-                usuario_nombre = payload.get("username")
+                usuario_id = payload.get("user_id")
+                usuario_nombre = payload.get("sub") or payload.get("username")
+                if usuario_id is not None:
+                    user_id_var.set(usuario_id)
             except:
                 pass  # Token inválido o expirado, seguir sin usuario
+
+        if not request_id_var.get():
+            request_id_var.set(request.headers.get("X-Request-ID", "unknown"))
         
         # Procesar request
         response = await call_next(request)
@@ -112,7 +117,7 @@ class AuditMiddleware(BaseHTTPMiddleware):
         resultado: str,
         detalles: dict
     ):
-        async for db in get_db_session():
+        async with AsyncSessionLocal() as session:
             try:
                 evento = EventoAuditoria(
                     usuario_id=usuario_id,
@@ -125,10 +130,8 @@ class AuditMiddleware(BaseHTTPMiddleware):
                     detalles=detalles,
                     fecha_evento=datetime.utcnow()
                 )
-                db.add(evento)
-                await db.commit()
+                session.add(evento)
+                await session.commit()
             except Exception as e:
                 logger.error("error_insertar_evento_auditoria", error=str(e))
-                await db.rollback()
-            
-            break  # Solo usar la primera sesión
+                await session.rollback()

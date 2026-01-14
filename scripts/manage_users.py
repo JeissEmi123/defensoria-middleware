@@ -47,7 +47,7 @@ def crear(usuario, email, nombre, contrasena, superuser):
                     contrasena_hash=hash_password(contrasena),
                     es_superusuario=superuser,
                     activo=True,
-                    tipo_autenticacion=TipoAutenticacion.LOCAL
+                    tipo_autenticacion=TipoAutenticacion.local
                 )
                 
                 db.add(nuevo_usuario)

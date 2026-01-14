@@ -166,6 +166,9 @@ class AuditLogger:
             event_type="configuration"
         )
 
+    def info(self, event: str, **kwargs: Any) -> None:
+        self.logger.info(event, **kwargs)
+
 
 # Inicializar logging
 configure_logging()

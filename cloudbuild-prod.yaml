@@ -1,0 +1,46 @@
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/defensoria-middleware:$COMMIT_SHA', '-t', 'gcr.io/$PROJECT_ID/defensoria-middleware:latest', '.']
+
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/defensoria-middleware:$COMMIT_SHA']
+  
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/defensoria-middleware:latest']
+
+  # Deploy container image to Cloud Run (prod)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'defensoria-middleware-prod'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/defensoria-middleware:$COMMIT_SHA'
+      - '--region'
+      - 'us-central1'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--set-env-vars'
+      - 'APP_ENV=production'
+      - '--min-instances'
+      - '1'
+      - '--max-instances'
+      - '10'
+      - '--cpu'
+      - '1'
+      - '--memory'
+      - '2Gi'
+      - '--timeout'
+      - '3600'
+      - '--concurrency'
+      - '80'
+
+images:
+  - 'gcr.io/$PROJECT_ID/defensoria-middleware:$COMMIT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

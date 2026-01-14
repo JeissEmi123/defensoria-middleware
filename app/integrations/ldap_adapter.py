@@ -21,10 +21,10 @@ class LDAPAdapter:
             return None
         
         try:
-            # Construir DN del usuario
+            
             user_dn = self.user_dn_template.format(username=username)
             
-            # Conectar al servidor LDAP
+            
             ldap_url = f"{self.ldap_server}:{self.ldap_port}"
             
             if self.ldap_use_ssl:
@@ -34,10 +34,10 @@ class LDAPAdapter:
             conn.set_option(ldap.OPT_REFERRALS, 0)
             conn.set_option(ldap.OPT_PROTOCOL_VERSION, 3)
             
-            # Intentar bind con las credenciales del usuario
+            
             conn.simple_bind_s(user_dn, password)
             
-            # Si el bind es exitoso, obtener atributos del usuario
+            
             search_filter = f"(uid={username})"
             attributes = ['mail', 'cn', 'displayName', 'givenName', 'sn']
             
@@ -46,7 +46,7 @@ class LDAPAdapter:
             if result:
                 dn, attrs = result[0]
                 
-                # Extraer información del usuario
+            
                 user_info = {
                     "username": username,
                     "email": attrs.get('mail', [b''])[0].decode('utf-8') if 'mail' in attrs else None,
@@ -60,17 +60,17 @@ class LDAPAdapter:
             return None
         
         except ldap.INVALID_CREDENTIALS:
-            # Credenciales inválidas
+            
             return None
         
         except ldap.SERVER_DOWN:
-            # Servidor LDAP no disponible
+            
             print(f"Error: Servidor LDAP {self.ldap_server} no disponible")
             return None
         
         except Exception as e:
             print(f"Error en autenticación LDAP: {str(e)}")
-            # En desarrollo, retornar un usuario de prueba si LDAP no está configurado
+            
             if os.getenv("DEBUG", "False").lower() == "true":
                 return {
                     "username": username,

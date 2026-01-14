@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, HTTPException, Request, Query, Header
+from fastapi import APIRouter, Depends, status, HTTPException, Request, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 
@@ -10,7 +10,7 @@ from app.schemas.auth import (
 )
 from app.core.dependencies import (
     get_current_user,
-    get_current_active_superuser,
+    get_optional_current_user,
     requiere_permisos
 )
 from app.core.logging import get_logger
@@ -50,15 +50,11 @@ async def crear_usuario(
     request: Request,
     usuario_data: UsuarioCreate,
     db: AsyncSession = Depends(get_db_session),
-    current_user: UsuarioActual = Depends(get_current_user)
+    current_user: UsuarioActual = Depends(get_optional_current_user)
 ):
     user_service = UserService(db)
-    from sqlalchemy import select
-    from app.database.models import Usuario
-    result = await db.execute(select(Usuario))
-    usuarios_existentes = result.scalars().first()
     try:
-        if not usuarios_existentes:
+        if not await user_service.existen_usuarios():
             # Si no hay usuarios, crear el primero sin autenticación
             usuario = await user_service.crear_usuario(usuario_data, creado_por_id=None)
             return usuario

@@ -85,6 +85,10 @@ async def get_current_active_superuser(
 
 
 def requiere_permisos(*permisos_requeridos: str):
+    permisos_lista = list(permisos_requeridos)
+    if len(permisos_lista) == 1 and isinstance(permisos_lista[0], (list, tuple, set)):
+        permisos_lista = list(permisos_lista[0])
+
     async def verificar_permisos(
         current_user: UsuarioActual = Depends(get_current_user),
         db: AsyncSession = Depends(get_db_session)
@@ -95,7 +99,7 @@ def requiere_permisos(*permisos_requeridos: str):
                 "acceso_autorizado_superusuario",
                 user_id=current_user.id,
                 username=current_user.nombre_usuario,
-                permisos_requeridos=list(permisos_requeridos)
+                permisos_requeridos=permisos_lista
             )
             return current_user
         
@@ -109,18 +113,18 @@ def requiere_permisos(*permisos_requeridos: str):
                 "acceso_autorizado_wildcard",
                 user_id=current_user.id,
                 username=current_user.nombre_usuario,
-                permisos_requeridos=list(permisos_requeridos)
+                permisos_requeridos=permisos_lista
             )
             return current_user
         
-        permisos_faltantes = set(permisos_requeridos) - set(permisos_usuario)
+        permisos_faltantes = set(permisos_lista) - set(permisos_usuario)
         
         if permisos_faltantes:
             logger.warning(
                 "acceso_denegado_permisos_insuficientes",
                 user_id=current_user.id,
                 username=current_user.nombre_usuario,
-                permisos_requeridos=list(permisos_requeridos),
+                permisos_requeridos=permisos_lista,
                 permisos_faltantes=list(permisos_faltantes)
             )
             raise AuthorizationError(
@@ -131,7 +135,7 @@ def requiere_permisos(*permisos_requeridos: str):
             "acceso_autorizado",
             user_id=current_user.id,
             username=current_user.nombre_usuario,
-            permisos=list(permisos_requeridos)
+            permisos=permisos_lista
         )
         
         return current_user

@@ -1,8 +1,9 @@
 from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, and_, delete
 from datetime import datetime
 
-from app.database.models import Rol, Permiso
+from app.database.models import Rol, Permiso, usuarios_roles, roles_permisos
 from app.schemas.auth import (
     RolCreate, RolUpdate, RolResponse,
     PermisoResponse, AsignarRolesRequest
@@ -63,13 +64,22 @@ class RBACService:
             es_sistema=False  # Roles creados por usuario no son de sistema
         )
         
-        nuevo_rol = await self.rol_repo.create(nuevo_rol)
-        
-        # Asignar permisos si se proporcionaron
-        if rol_data.permisos:
-            await self.rol_repo.assign_permisos(nuevo_rol.id, rol_data.permisos)
-        
-        await self.db.commit()
+        try:
+            nuevo_rol = await self.rol_repo.create(nuevo_rol)
+            
+            # Asignar permisos si se proporcionaron
+            if rol_data.permisos:
+                permisos_ok = await self.rol_repo.assign_permisos(
+                    nuevo_rol.id,
+                    rol_data.permisos
+                )
+                if not permisos_ok:
+                    raise DatabaseError("No se pudieron asignar permisos al rol")
+            
+            await self.db.commit()
+        except Exception:
+            await self.db.rollback()
+            raise
         
         # Recargar rol con permisos para respuesta
         nuevo_rol = await self.rol_repo.get_with_permisos(nuevo_rol.id)
@@ -145,16 +155,24 @@ class RBACService:
         if rol_data.activo is not None:
             rol.activo = rol_data.activo
         
-        # Actualizar permisos si se proporcionaron
-        if rol_data.permisos is not None:
-            # Limpiar permisos actuales y asignar nuevos
-            await self.rol_repo.clear_permisos(rol_id)
-            await self.rol_repo.assign_permisos(rol_id, rol_data.permisos)
-        
-        rol.fecha_actualizacion = datetime.utcnow()
-        await self.rol_repo.update(rol)
-        await self.db.commit()
-        await self.db.refresh(rol)
+        try:
+            # Actualizar permisos si se proporcionaron
+            if rol_data.permisos is not None:
+                # Limpiar permisos actuales y asignar nuevos
+                cleared = await self.rol_repo.clear_permisos(rol_id)
+                if not cleared:
+                    raise DatabaseError("No se pudieron limpiar permisos del rol")
+                permisos_ok = await self.rol_repo.assign_permisos(rol_id, rol_data.permisos)
+                if not permisos_ok:
+                    raise DatabaseError("No se pudieron asignar permisos al rol")
+            
+            rol.fecha_actualizacion = datetime.utcnow()
+            await self.rol_repo.update(rol)
+            await self.db.commit()
+            await self.db.refresh(rol)
+        except Exception:
+            await self.db.rollback()
+            raise
         
         # Auditoría
         audit_logger.log_configuration_change(
@@ -187,8 +205,12 @@ class RBACService:
         
         # Soft delete
         rol.activo = False
-        await self.rol_repo.update(rol)
-        await self.db.commit()
+        try:
+            await self.rol_repo.update(rol)
+            await self.db.commit()
+        except Exception:
+            await self.db.rollback()
+            raise
         
         # Auditoría
         audit_logger.log_configuration_change(
@@ -250,22 +272,27 @@ class RBACService:
             if not result.scalar_one_or_none():
                 raise ValidationError(f"Rol con ID {rol_id} no existe o está inactivo")
         
-        # Eliminar roles actuales
-        await self.db.execute(
-            delete(usuarios_roles).where(usuarios_roles.c.usuario_id == usuario_id)
-        )
-        
-        # Asignar nuevos roles
-        for rol_id in roles_ids:
+        try:
+            # Eliminar roles actuales
             await self.db.execute(
-                usuarios_roles.insert().values(
-                    usuario_id=usuario_id,
-                    rol_id=rol_id,
-                    fecha_asignacion=datetime.utcnow()
-                )
+                delete(usuarios_roles).where(usuarios_roles.c.usuario_id == usuario_id)
             )
-        
-        await self.db.commit()
+            
+            # Asignar nuevos roles
+            for rol_id in roles_ids:
+                await self.db.execute(
+                    usuarios_roles.insert().values(
+                        usuario_id=usuario_id,
+                        rol_id=rol_id,
+                        fecha_asignacion=datetime.utcnow()
+                    )
+                )
+            
+            await self.db.commit()
+        except Exception as e:
+            await self.db.rollback()
+            logger.error("error_asignar_roles_transaccion", error=str(e), usuario_id=usuario_id)
+            raise DatabaseError("Error al asignar roles al usuario")
         
         # Auditoría
         audit_logger.log_configuration_change(
@@ -284,7 +311,7 @@ class RBACService:
         )
     
     async def obtener_roles_usuario(self, usuario_id: int) -> List[RolResponse]:
-        usuario = await self.usuario_repo.get_with_roles(usuario_id)
+        usuario = await self.usuario_repo.get_with_roles_and_permisos(usuario_id)
         if not usuario:
             raise UserNotFoundError(f"Usuario con ID {usuario_id} no encontrado")
         

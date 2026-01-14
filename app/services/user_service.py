@@ -4,8 +4,6 @@ from datetime import datetime
 
 from sqlalchemy import select, and_, func, desc
 from app.database.models import Usuario, Sesion, PasswordHistory
-
-from app.database.models import Usuario
 from app.schemas.auth import (
     UsuarioCreate, UsuarioUpdate, UsuarioResponse,
     TipoAutenticacion
@@ -51,6 +49,16 @@ class UserService:
         # Inyección de dependencias con factories como fallback
         self.usuario_repo = usuario_repo or get_usuario_repository(db)
         self.sesion_repo = sesion_repo or get_sesion_repository(db)
+
+    async def existen_usuarios(self) -> bool:
+        result = await self.db.execute(select(func.count(Usuario.id)))
+        return (result.scalar() or 0) > 0
+
+    async def _obtener_usuario_entidad(self, usuario_id: int) -> Usuario:
+        usuario = await self.usuario_repo.get_by_id(usuario_id)
+        if not usuario:
+            raise UserNotFoundError(f"Usuario con ID {usuario_id} no encontrado")
+        return usuario
     
     async def crear_usuario(
         self,
@@ -136,12 +144,13 @@ class UserService:
             await self.db.commit()
         
         # Auditoría
-        audit_logger.log_data_access(
-            user_id=creado_por_id,
-            username="admin",
-            resource=f"usuario.{nuevo_usuario.id}",
-            action="create"
-        )
+        if creado_por_id is not None:
+            audit_logger.log_data_access(
+                user_id=creado_por_id,
+                username="admin",
+                resource=f"usuario.{nuevo_usuario.id}",
+                action="create"
+            )
         
         logger.info(
             "usuario_creado",
@@ -421,7 +430,7 @@ class UserService:
         return count
     
     async def desbloquear_usuario(self, usuario_id: int, admin_id: int) -> UsuarioResponse:
-        usuario = await self.obtener_por_id(usuario_id)
+        usuario = await self._obtener_usuario_entidad(usuario_id)
         
         if usuario.intentos_login_fallidos == 0 and not usuario.fecha_bloqueo:
             logger.warning(
@@ -460,7 +469,7 @@ class UserService:
         nueva_contrasena: str,
         admin_id: int
     ) -> UsuarioResponse:
-        usuario = await self.obtener_por_id(usuario_id)
+        usuario = await self._obtener_usuario_entidad(usuario_id)
         
         # Validar fortaleza de la contraseña
         errores = validate_password_strength(nueva_contrasena)

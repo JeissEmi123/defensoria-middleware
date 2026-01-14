@@ -10,14 +10,84 @@ import time
 import uuid
 
 from app.config import settings
-from app.core.logging import get_logger, request_id_var
+from app.core.logging import get_logger, request_id_var, user_id_var
+from app.auth.tokens import TokenManager
 from app.core.exceptions import RateLimitError
 
 logger = get_logger(__name__)
+token_manager = TokenManager()
 
 # Inicializar rate limiter
 limiter = Limiter(key_func=get_remote_address)
 
+DEFAULT_ALLOWED_ORIGINS = [
+    # Frontend en Cloud Run (Produccion)
+    "https://defensoria-frontend-411798681660.us-central1.run.app",
+    "https://defensoria-frontend-jrwf7omlvq-uc.a.run.app",
+
+    # Desarrollo local - Todos los puertos comunes
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002",
+    "http://localhost:3003",
+    "http://localhost:3004",
+    "http://localhost:3005",
+    "http://localhost:3007",
+    "http://localhost:5173",
+    "http://localhost:8000",
+    "http://127.0.0.1:3000",
+    "http://127.0.0.1:3001",
+    "http://127.0.0.1:3002",
+    "http://127.0.0.1:3003",
+    "http://127.0.0.1:3004",
+    "http://127.0.0.1:3005",
+    "http://127.0.0.1:3007",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:8000",
+    "http://192.168.78.247",
+    "http://172.23.208.1:3003",
+    "http://192.168.78.247:3004/",
+    "http://172.23.208.1:3004/",
+]
+
+
+def get_cors_settings():
+    raw_allowed_origins = settings.get_allowed_origins
+    allow_credentials = settings.cors_allow_credentials
+    allow_all_origins = False
+    if "*" in raw_allowed_origins:
+        raw_allowed_origins = [origin for origin in raw_allowed_origins if origin != "*"]
+        if not allow_credentials:
+            allow_all_origins = True
+
+    allowed_origins = ["*"] if allow_all_origins else list(
+        dict.fromkeys(raw_allowed_origins + DEFAULT_ALLOWED_ORIGINS)
+    )
+
+    logger.info(
+        "cors_config",
+        allowed_origins=allowed_origins,
+        allow_credentials=allow_credentials,
+        allow_all_origins=allow_all_origins
+    )
+
+    return {
+        "allow_origins": allowed_origins,
+        "allow_credentials": allow_credentials,
+        "allow_methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH", "HEAD"],
+        "allow_headers": [
+            "Accept",
+            "Accept-Language",
+            "Content-Language",
+            "Content-Type",
+            "Authorization",
+            "X-Requested-With",
+            "Origin",
+            "Cache-Control",
+        ],
+        "expose_headers": ["*"],
+        "max_age": 3600,
+    }, allowed_origins, allow_all_origins, allow_credentials
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     
@@ -70,6 +140,28 @@ class RequestIDMiddleware(BaseHTTPMiddleware):
         response.headers["X-Request-ID"] = request_id
         
         return response
+
+
+class UserContextMiddleware(BaseHTTPMiddleware):
+
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        auth_header = request.headers.get("authorization", "")
+        if auth_header.startswith("Bearer "):
+            token = auth_header.replace("Bearer ", "")
+            try:
+                payload = token_manager.decodificar_token_sin_validar(token)
+                if payload:
+                    user_id = payload.get("user_id")
+                    if user_id is None:
+                        sub = payload.get("sub")
+                        if isinstance(sub, int):
+                            user_id = sub
+                    if user_id is not None:
+                        user_id_var.set(user_id)
+            except Exception:
+                pass
+
+        return await call_next(request)
 
 
 class LoggingMiddleware(BaseHTTPMiddleware):
@@ -178,22 +270,6 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.requests[client_ip].append(current_time)
         
         return await call_next(request)
-
-
-def get_cors_middleware():
-    return CORSMiddleware(
-        allow_origins=settings.allowed_origins,
-        allow_credentials=True,
-        allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-        allow_headers=[
-            "Authorization",
-            "Content-Type",
-            "X-Request-ID",
-            "X-CSRF-Token"
-        ],
-        expose_headers=["X-Request-ID", "X-Process-Time"],
-        max_age=3600,  # Cache preflight por 1 hora
-    )
 
 
 def configure_rate_limiter(app):

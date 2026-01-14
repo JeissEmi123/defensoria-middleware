@@ -49,6 +49,10 @@ class Settings(BaseSettings):
         except (json.JSONDecodeError, TypeError):
             return ["*"]
 
+    @property
+    def is_production(self) -> bool:
+        return self.app_env.lower() == "production"
+
     # Base de datos
     database_url: str
     db_pool_size: int = 20
@@ -84,6 +88,17 @@ class Settings(BaseSettings):
     gcp_project_id: Optional[str] = None
     gcp_region: str = "us-central1"
     enable_gcp_secret_manager: bool = False
+    
+    # Gmail API
+    gmail_service_account_file: Optional[str] = None
+    gmail_delegated_user: Optional[str] = None
+    gmail_oauth_client_secret_file: Optional[str] = None
+    gmail_use_oauth: bool = False
+    gmail_token_file: Optional[str] = None
+    email_from: Optional[str] = None
+
+    # Notificaciones
+    coordinador_email: Optional[str] = None
 
     # Password Reset
     password_reset_token_expire_hours: int = 1

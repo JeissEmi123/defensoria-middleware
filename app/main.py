@@ -1,7 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.middleware.trustedhost import TrustedHostMiddleware
 try:
     from fastapi.responses import ORJSONResponse
     DEFAULT_RESPONSE_CLASS = ORJSONResponse
@@ -9,10 +8,26 @@ except ImportError:
     # Si orjson no está disponible, usar JSONResponse con charset UTF-8
     DEFAULT_RESPONSE_CLASS = JSONResponse
 from app.config import get_settings
-from app.api import auth, rbac, usuarios, password_reset, senales
+from app.api import auth, rbac, usuarios, password_reset, senales_v2, categoria_observacion
+from app.api.detalle_completo import router as detalle_router
 from app.core.exceptions import DefensoriaException
+from app.core.handlers import register_exception_handlers
+from app.core.middleware import (
+    SecurityHeadersMiddleware,
+    RequestIDMiddleware,
+    UserContextMiddleware,
+    LoggingMiddleware,
+    RateLimitMiddleware,
+    HTTPSRedirectMiddleware,
+    TrustedHostMiddleware,
+    configure_rate_limiter,
+    get_cors_settings,
+)
+from app.core.audit_middleware import AuditMiddleware
+from app.core.logging import get_logger
 
 settings = get_settings()
+logger = get_logger(__name__)
 
 app = FastAPI(
     title=settings.app_name,
@@ -21,49 +36,83 @@ app = FastAPI(
     redirect_slashes=False,  # Evitar redirecciones 307 que pierden headers
     default_response_class=DEFAULT_RESPONSE_CLASS  # UTF-8 por defecto
 )
+app.state.settings = settings
+register_exception_handlers(app)
 
-# CORS Configuration
-# Orígenes permitidos: desarrollo local + producción GCP
-ALLOWED_ORIGINS = [
-    # Frontend en Cloud Run (Producción)
-    "https://defensoria-frontend-411798681660.us-central1.run.app",
-    
-    # Desarrollo local - Todos los puertos comunes
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:3002",
-    "http://localhost:3003",
-    "http://localhost:3004",
-    "http://localhost:3005",
-    "http://localhost:3007",
-    "http://localhost:5173",  # Vite default
-    "http://localhost:8000",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:3001",
-    "http://127.0.0.1:3002",
-    "http://127.0.0.1:3003",
-    "http://127.0.0.1:3004",
-    "http://127.0.0.1:3005",
-    "http://127.0.0.1:3007",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:8000",
-    "http://192.168.78.247",
-    "http://172.23.208.1:3003",
-    "http://192.168.78.247:3004/",
-    "http://172.23.208.1:3004/"
-]
-
-print(f"🔧 CORS Enabled for origins: {ALLOWED_ORIGINS}")
+cors_settings, allowed_origins, allow_all_origins, allow_credentials = get_cors_settings()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS if settings.app_env == "production" else ["*"],  # Permitir todos en desarrollo
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"],
-    max_age=3600,
+    **cors_settings,
 )
+configure_rate_limiter(app)
+app.add_middleware(TrustedHostMiddleware)
+app.add_middleware(HTTPSRedirectMiddleware)
+app.add_middleware(
+    RateLimitMiddleware,
+    calls=settings.rate_limit_per_minute,
+    period=60,
+)
+app.add_middleware(AuditMiddleware)
+app.add_middleware(LoggingMiddleware)
+app.add_middleware(UserContextMiddleware)
+app.add_middleware(RequestIDMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
+
+if settings.debug and not settings.is_production:
+    # Middleware para debug CORS (solo en desarrollo)
+    @app.middleware("http")
+    async def debug_cors_middleware(request: Request, call_next):
+        sensitive_headers = {
+            "authorization",
+            "cookie",
+            "set-cookie",
+            "proxy-authorization",
+            "x-api-key",
+        }
+        redacted_headers = {}
+        for header_name, header_value in request.headers.items():
+            if header_name.lower() in sensitive_headers:
+                redacted_headers[header_name] = "[redacted]"
+            else:
+                redacted_headers[header_name] = header_value
+        origin = request.headers.get("origin", "No Origin")
+        method = request.method
+        path = request.url.path
+        
+        logger.debug(
+            "cors_debug_request",
+            method=method,
+            path=path,
+            origin=origin,
+            headers=redacted_headers
+        )
+        
+        response = await call_next(request)
+        
+        # Forzar headers CORS manualmente para debug
+        origin_permitido = (
+            origin
+            and (
+                origin in allowed_origins
+                or allow_all_origins
+            )
+        )
+        if origin_permitido:
+            response.headers["access-control-allow-origin"] = origin
+            if allow_credentials:
+                response.headers["access-control-allow-credentials"] = "true"
+            response.headers["access-control-expose-headers"] = "*"
+            # Agregar headers anti-cache para evitar problemas de proxy/CDN
+            response.headers["cache-control"] = "no-cache, no-store, must-revalidate"
+            response.headers["pragma"] = "no-cache"
+            response.headers["expires"] = "0"
+            logger.debug(
+                "cors_debug_headers_added",
+                origin=origin
+            )
+        
+        return response
 
 # Middleware para garantizar Content-Type con charset UTF-8
 @app.middleware("http")
@@ -91,7 +140,9 @@ app.include_router(auth.router, prefix="/auth", tags=["Autenticación"])
 app.include_router(rbac.router, prefix="/rbac", tags=["RBAC"])
 app.include_router(usuarios.router, prefix="/usuarios", tags=["Usuarios"])
 app.include_router(password_reset.router, prefix="/password", tags=["Recuperación de Contraseña"])
-app.include_router(senales.router, prefix="/api/v1/senales", tags=["Señales"])
+app.include_router(senales_v2.router, prefix="/api/v2/senales", tags=["Señales v2"])
+app.include_router(detalle_router, prefix="/api/v2/senales", tags=["Detalle Completo"])
+app.include_router(categoria_observacion.router, prefix="/api/v2/categorias-observacion", tags=["Categorías Observación"])
 
 @app.get('/')
 async def root():
