@@ -27,8 +27,8 @@ async def obtener_detalle_completo_senal(
                 cs.nombre_categoria_senal,
                 cas.nombre_categoria_analisis
             FROM sds.senal_detectada sd
-            JOIN sds.categoria_senal cs ON sd.id_categoria_senal = cs.id_categoria_senales
-            JOIN sds.categoria_analisis_senal cas ON sd.id_categoria_analisis_senal = cas.id_categoria_analisis_senal
+            JOIN sds.categoria_senal cs ON sd.id_categoria_senal = cs.id_categoria_senal
+            JOIN sds.categoria_analisis_senal cas ON sd.id_categoria_analisis = cas.id_categoria_analisis_senal
             WHERE sd.id_senal_detectada = :id_senal
         """), {"id_senal": id_senal})
         

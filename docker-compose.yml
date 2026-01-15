@@ -21,7 +21,7 @@ services:
     container_name: defensoria_middleware
     command: sh run.sh
     ports:
-      - "${APP_PORT:-8000}:8000"
+      - "${APP_PORT:-9000}:9000"
     volumes:
       - .:/app
     depends_on:

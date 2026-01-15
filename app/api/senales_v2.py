@@ -62,14 +62,14 @@ async def _build_home_dashboard_payload(db: AsyncSession) -> HomeResponse:
         categoria = getattr(senal, "categoria_senal", None)
         return {
             "id_categoria_senales": (
-                getattr(categoria, "id_categoria_senales", None)
+                getattr(categoria, "id_categoria_senal", None)
                 or getattr(senal, "id_categoria_senal", None)
                 or 0
             ),
             "nombre_categoria_senal": getattr(categoria, "nombre_categoria_senal", None) or "Desconocido",
-            "descripcion_categoria_senal": getattr(categoria, "descripcion_categoria_senal", None),
+            "descripcion_categoria_senal": getattr(categoria, "descripcion", None),
             "nivel": getattr(categoria, "nivel", None),
-            "color_categoria": getattr(categoria, "color_categoria", None),
+            "color_categoria": getattr(categoria, "color", None),
             "ultimo_usuario_id": getattr(categoria, "ultimo_usuario_id", None),
             "ultimo_usuario_nombre": getattr(categoria, "ultimo_usuario_nombre", None),
             "ultima_actualizacion": getattr(categoria, "ultima_actualizacion", None),
@@ -80,7 +80,7 @@ async def _build_home_dashboard_payload(db: AsyncSession) -> HomeResponse:
         return {
             "id_categoria_analisis_senal": (
                 getattr(categoria, "id_categoria_analisis_senal", None)
-                or getattr(senal, "id_categoria_analisis_senal", None)
+                or getattr(senal, "id_categoria_analisis", None)
                 or 0
             ),
             "nombre_categoria_analisis": getattr(categoria, "nombre_categoria_analisis", None) or "Desconocido",
@@ -343,10 +343,10 @@ async def listar_categorias_senal(
         categorias = await service.listar_categorias_senal()
         return [
             {
-                "id_categoria_senal": categoria.id_categoria_senales,
+                "id_categoria_senal": categoria.id_categoria_senal,
                 "nombre_categoria_senal": categoria.nombre_categoria_senal,
-                "descripcion_categoria_senal": categoria.descripcion_categoria_senal,
-                "color_categoria": categoria.color_categoria,
+                "descripcion_categoria_senal": categoria.descripcion,
+                "color_categoria": categoria.color,
                 "nivel": categoria.nivel,
             }
             for categoria in categorias

@@ -106,7 +106,7 @@ class AsignarRolesRequest(BaseModel):
 
 class ValidateTokenResponse(BaseModel):
     valido: bool
-    usuario: Optional[UsuarioResponse] = None
+    usuario: Optional[UsuarioActual] = None
     razon: Optional[str] = None
 
 class CambiarContrasenaRequest(BaseModel):

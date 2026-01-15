@@ -33,3 +33,16 @@ tests/
 *.swo
 *~
 .DS_Store
+cloud-sql-proxy/
+cloud-sql-proxy.exe
+google-cloud-sdk/
+google-cloud-sdk-*.tar.gz
+backup*.sql
+*.docx
+*.csv
+temp_*
+token.json
+secrets-*.txt
+config/service-account-key.json
+config/oauth-client-secret.json
+config/gmail-token.pickle

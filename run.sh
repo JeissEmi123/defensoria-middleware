@@ -9,4 +9,4 @@ echo "Ejecutando migraciones de Alembic..."
 alembic upgrade head
 
 echo "Iniciando servidor FastAPI..."
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app.main:app --host 0.0.0.0 --port 9000 --reload

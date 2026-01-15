@@ -48,3 +48,11 @@ build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Google Cloud Credentials - CRÍTICO NO SUBIR
+config/service-account-key.json
+config/oauth-client-secret.json
+config/gmail-token.pickle
+*.json.backup
+credentials/
+token.json

@@ -10,6 +10,7 @@ from typing import Optional
 
 from google.oauth2 import service_account
 from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
@@ -34,7 +35,7 @@ class EmailService:
     def _init_oauth(self):
         """Inicializar con OAuth (Gmail personal)."""
         token_file = os.getenv("GMAIL_TOKEN_FILE", "config/gmail-token.pickle")
-        
+
         if not os.path.exists(token_file):
             logger.warning("Token OAuth no encontrado en %s", token_file)
             return
@@ -44,8 +45,18 @@ class EmailService:
                 creds = pickle.load(token)
             
             if not creds or not creds.valid:
-                logger.warning("Token OAuth inválido o expirado")
-                return
+                if creds and creds.expired and creds.refresh_token:
+                    try:
+                        creds.refresh(Request())
+                        with open(token_file, 'wb') as refreshed:
+                            pickle.dump(creds, refreshed)
+                        logger.info("Token OAuth refrescado correctamente")
+                    except Exception as exc:
+                        logger.warning("No se pudo refrescar el token OAuth: %s", exc)
+                        return
+                else:
+                    logger.warning("Token OAuth inválido o expirado")
+                    return
             
             self.gmail_service = build(
                 "gmail",

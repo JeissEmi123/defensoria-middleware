@@ -22,7 +22,7 @@ def autorizar_gmail_oauth():
     creds = None
     config_dir = os.path.join(os.path.dirname(__file__), '..', 'config')
     client_secret_file = os.path.join(config_dir, 'client_secret.json')
-    token_file = os.path.join(config_dir, 'gmail_token.json')
+    token_file = os.path.join(config_dir, 'gmail-token.pickle')
     
     print(f"🔍 Buscando archivo client_secret en: {client_secret_file}")
     

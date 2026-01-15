@@ -44,7 +44,7 @@ class SenalServiceV2:
         if filtros:
             conditions = []
             if filtros.id_categoria_analisis_senal:
-                conditions.append(SenalDetectada.id_categoria_analisis_senal == filtros.id_categoria_analisis_senal)
+                conditions.append(SenalDetectada.id_categoria_analisis == filtros.id_categoria_analisis_senal)
             if filtros.id_categoria_senal:
                 conditions.append(SenalDetectada.id_categoria_senal == filtros.id_categoria_senal)
             if filtros.fecha_desde:
@@ -64,7 +64,7 @@ class SenalServiceV2:
         if filtros:
             conditions = []
             if filtros.id_categoria_analisis_senal:
-                conditions.append(SenalDetectada.id_categoria_analisis_senal == filtros.id_categoria_analisis_senal)
+                conditions.append(SenalDetectada.id_categoria_analisis == filtros.id_categoria_analisis_senal)
             if filtros.id_categoria_senal:
                 conditions.append(SenalDetectada.id_categoria_senal == filtros.id_categoria_senal)
             if filtros.fecha_desde:
@@ -204,18 +204,18 @@ class SenalServiceV2:
         return result.scalars().all()
 
     async def obtener_senales_recientes(self, limite: int) -> List[dict]:
-        result = await self.db.execute(text("""
+        query = text("""
             SELECT 
                 sd.id_senal_detectada,
                 CONCAT('Señal #', sd.id_senal_detectada) as titulo,
                 cs.nombre_categoria_senal,
                 COALESCE(
-                    cs.color_categoria,
+                    cs.color,
                     CASE 
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%ruido%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%ruido%' THEN '#808080'
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%problemas menores%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%problemas menores%' OR LOWER(cs.nombre_categoria_senal) LIKE '%problema menor%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%problema menor%' THEN '#00FF00'
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%paracrisis%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%paracrisis%' THEN '#FFA500' 
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%crisis%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%crisis%' THEN '#FF0000'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%ruido%' OR LOWER(cs.descripcion) LIKE '%ruido%' THEN '#808080'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%problemas menores%' OR LOWER(cs.descripcion) LIKE '%problemas menores%' OR LOWER(cs.nombre_categoria_senal) LIKE '%problema menor%' OR LOWER(cs.descripcion) LIKE '%problema menor%' THEN '#00FF00'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%paracrisis%' OR LOWER(cs.descripcion) LIKE '%paracrisis%' THEN '#FFA500' 
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%crisis%' OR LOWER(cs.descripcion) LIKE '%crisis%' THEN '#FF0000'
                         ELSE '#CCCCCC'
                     END
                 ) as color,
@@ -225,8 +225,8 @@ class SenalServiceV2:
                 COALESCE(hist.usuario_nombre, 'prueba') as usuario,
                 hist.fecha_registro as fecha_evento
             FROM sds.senal_detectada sd
-            JOIN sds.categoria_senal cs ON sd.id_categoria_senal = cs.id_categoria_senales
-            JOIN sds.categoria_analisis_senal cas ON sd.id_categoria_analisis_senal = cas.id_categoria_analisis_senal
+            JOIN sds.categoria_senal cs ON sd.id_categoria_senal = cs.id_categoria_senal
+            JOIN sds.categoria_analisis_senal cas ON sd.id_categoria_analisis = cas.id_categoria_analisis_senal
             LEFT JOIN LATERAL (
                 SELECT 
                     COALESCE(u.nombre_usuario, 'prueba') as usuario_nombre,
@@ -239,7 +239,40 @@ class SenalServiceV2:
             ) hist ON TRUE
             ORDER BY sd.fecha_actualizacion DESC, sd.id_senal_detectada DESC
             LIMIT :limite
-        """), {"limite": limite})
+        """)
+        fallback_query = text("""
+            SELECT 
+                sd.id_senal_detectada,
+                CONCAT('Señal #', sd.id_senal_detectada) as titulo,
+                cs.nombre_categoria_senal,
+                COALESCE(
+                    cs.color,
+                    CASE 
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%ruido%' OR LOWER(cs.descripcion) LIKE '%ruido%' THEN '#808080'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%problemas menores%' OR LOWER(cs.descripcion) LIKE '%problemas menores%' OR LOWER(cs.nombre_categoria_senal) LIKE '%problema menor%' OR LOWER(cs.descripcion) LIKE '%problema menor%' THEN '#00FF00'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%paracrisis%' OR LOWER(cs.descripcion) LIKE '%paracrisis%' THEN '#FFA500' 
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%crisis%' OR LOWER(cs.descripcion) LIKE '%crisis%' THEN '#FF0000'
+                        ELSE '#CCCCCC'
+                    END
+                ) as color,
+                sd.score_riesgo,
+                sd.fecha_deteccion,
+                cas.nombre_categoria_analisis,
+                'prueba' as usuario,
+                NULL::timestamp as fecha_evento
+            FROM sds.senal_detectada sd
+            JOIN sds.categoria_senal cs ON sd.id_categoria_senal = cs.id_categoria_senal
+            JOIN sds.categoria_analisis_senal cas ON sd.id_categoria_analisis = cas.id_categoria_analisis_senal
+            ORDER BY sd.fecha_actualizacion DESC, sd.id_senal_detectada DESC
+            LIMIT :limite
+        """)
+
+        try:
+            result = await self.db.execute(query, {"limite": limite})
+        except Exception as e:
+            if "historial_senal" not in str(e):
+                raise
+            result = await self.db.execute(fallback_query, {"limite": limite})
 
         senales = []
         for row in result:
@@ -305,21 +338,21 @@ class SenalServiceV2:
 
         where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
 
-        result = await self.db.execute(text(f"""
+        query = text(f"""
             SELECT 
                 sd.id_senal_detectada,
                 CONCAT('Señal #', sd.id_senal_detectada) as titulo,
                 cs.nombre_categoria_senal,
                 COALESCE(
-                    cs.color_categoria,
+                    cs.color,
                     CASE 
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%ruido%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%ruido%' THEN '#808080'
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%problemas menores%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%problemas menores%' OR LOWER(cs.nombre_categoria_senal) LIKE '%problema menor%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%problema menor%' THEN '#00FF00'
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%paracrisis%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%paracrisis%' THEN '#FFA500' 
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%crisis%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%crisis%' THEN '#FF0000'
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%rojo%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%rojo%' THEN '#FF0000'
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%amarillo%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%amarillo%' THEN '#FFFF00'
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%verde%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%verde%' THEN '#00FF00'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%ruido%' OR LOWER(cs.descripcion) LIKE '%ruido%' THEN '#808080'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%problemas menores%' OR LOWER(cs.descripcion) LIKE '%problemas menores%' OR LOWER(cs.nombre_categoria_senal) LIKE '%problema menor%' OR LOWER(cs.descripcion) LIKE '%problema menor%' THEN '#00FF00'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%paracrisis%' OR LOWER(cs.descripcion) LIKE '%paracrisis%' THEN '#FFA500' 
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%crisis%' OR LOWER(cs.descripcion) LIKE '%crisis%' THEN '#FF0000'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%rojo%' OR LOWER(cs.descripcion) LIKE '%rojo%' THEN '#FF0000'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%amarillo%' OR LOWER(cs.descripcion) LIKE '%amarillo%' THEN '#FFFF00'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%verde%' OR LOWER(cs.descripcion) LIKE '%verde%' THEN '#00FF00'
                         ELSE '#CCCCCC'
                     END
                 ) as color,
@@ -329,8 +362,8 @@ class SenalServiceV2:
                 COALESCE(hist.usuario_nombre, 'prueba') as usuario,
                 hist.fecha_registro as fecha_evento
             FROM sds.senal_detectada sd
-            JOIN sds.categoria_senal cs ON sd.id_categoria_senal = cs.id_categoria_senales
-            JOIN sds.categoria_analisis_senal cas ON sd.id_categoria_analisis_senal = cas.id_categoria_analisis_senal
+            JOIN sds.categoria_senal cs ON sd.id_categoria_senal = cs.id_categoria_senal
+            JOIN sds.categoria_analisis_senal cas ON sd.id_categoria_analisis = cas.id_categoria_analisis_senal
             LEFT JOIN LATERAL (
                 SELECT 
                     COALESCE(u.nombre_usuario, 'prueba') as usuario_nombre,
@@ -344,7 +377,44 @@ class SenalServiceV2:
             {where_clause}
             ORDER BY sd.score_riesgo DESC, sd.fecha_deteccion DESC
             LIMIT :limit OFFSET :offset
-        """), {**params, 'limit': limit, 'offset': offset})
+        """)
+        fallback_query = text(f"""
+            SELECT 
+                sd.id_senal_detectada,
+                CONCAT('Señal #', sd.id_senal_detectada) as titulo,
+                cs.nombre_categoria_senal,
+                COALESCE(
+                    cs.color,
+                    CASE 
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%ruido%' OR LOWER(cs.descripcion) LIKE '%ruido%' THEN '#808080'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%problemas menores%' OR LOWER(cs.descripcion) LIKE '%problemas menores%' OR LOWER(cs.nombre_categoria_senal) LIKE '%problema menor%' OR LOWER(cs.descripcion) LIKE '%problema menor%' THEN '#00FF00'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%paracrisis%' OR LOWER(cs.descripcion) LIKE '%paracrisis%' THEN '#FFA500' 
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%crisis%' OR LOWER(cs.descripcion) LIKE '%crisis%' THEN '#FF0000'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%rojo%' OR LOWER(cs.descripcion) LIKE '%rojo%' THEN '#FF0000'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%amarillo%' OR LOWER(cs.descripcion) LIKE '%amarillo%' THEN '#FFFF00'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%verde%' OR LOWER(cs.descripcion) LIKE '%verde%' THEN '#00FF00'
+                        ELSE '#CCCCCC'
+                    END
+                ) as color,
+                sd.score_riesgo,
+                sd.fecha_deteccion,
+                cas.nombre_categoria_analisis,
+                'prueba' as usuario,
+                NULL::timestamp as fecha_evento
+            FROM sds.senal_detectada sd
+            JOIN sds.categoria_senal cs ON sd.id_categoria_senal = cs.id_categoria_senal
+            JOIN sds.categoria_analisis_senal cas ON sd.id_categoria_analisis = cas.id_categoria_analisis_senal
+            {where_clause}
+            ORDER BY sd.score_riesgo DESC, sd.fecha_deteccion DESC
+            LIMIT :limit OFFSET :offset
+        """)
+
+        try:
+            result = await self.db.execute(query, {**params, 'limit': limit, 'offset': offset})
+        except Exception as e:
+            if "historial_senal" not in str(e):
+                raise
+            result = await self.db.execute(fallback_query, {**params, 'limit': limit, 'offset': offset})
 
         senales = []
         for row in result:
@@ -363,8 +433,8 @@ class SenalServiceV2:
         count_result = await self.db.execute(text(f"""
             SELECT COUNT(*)
             FROM sds.senal_detectada sd
-            JOIN sds.categoria_senal cs ON sd.id_categoria_senal = cs.id_categoria_senales
-            JOIN sds.categoria_analisis_senal cas ON sd.id_categoria_analisis_senal = cas.id_categoria_analisis_senal
+            JOIN sds.categoria_senal cs ON sd.id_categoria_senal = cs.id_categoria_senal
+            JOIN sds.categoria_analisis_senal cas ON sd.id_categoria_analisis = cas.id_categoria_analisis_senal
             {where_clause}
         """), params)
         total = count_result.scalar()
@@ -401,7 +471,7 @@ class SenalServiceV2:
             return await self._obtener_tendencia_por_categoria(
                 tabla_categoria="categoria_senal",
                 sd_id_col="id_categoria_senal",
-                cat_id_col="id_categoria_senales",
+                cat_id_col="id_categoria_senal",
                 nombre_col="nombre_categoria_senal",
                 granularity=granularity,
                 fecha_desde=fecha_desde,
@@ -410,7 +480,7 @@ class SenalServiceV2:
         if tipo == "categoria_analisis":
             return await self._obtener_tendencia_por_categoria(
                 tabla_categoria="categoria_analisis_senal",
-                sd_id_col="id_categoria_analisis_senal",
+                sd_id_col="id_categoria_analisis",
                 cat_id_col="id_categoria_analisis_senal",
                 nombre_col="nombre_categoria_analisis",
                 granularity=granularity,
@@ -504,13 +574,13 @@ class SenalServiceV2:
                 cas.id_categoria_analisis_senal,
                 cas.nombre_categoria_analisis,
                 cas.descripcion_categoria_analisis,
-                cs.id_categoria_senales,
+                cs.id_categoria_senal,
                 cs.nombre_categoria_senal,
-                cs.descripcion_categoria_senal,
+                cs.descripcion,
                 cs.nivel
             FROM sds.senal_detectada sd
-            JOIN sds.categoria_analisis_senal cas ON sd.id_categoria_analisis_senal = cas.id_categoria_analisis_senal
-            JOIN sds.categoria_senal cs ON sd.id_categoria_senal = cs.id_categoria_senales
+            JOIN sds.categoria_analisis_senal cas ON sd.id_categoria_analisis = cas.id_categoria_analisis_senal
+            JOIN sds.categoria_senal cs ON sd.id_categoria_senal = cs.id_categoria_senal
             WHERE sd.id_senal_detectada = :id_senal
         """), {"id_senal": id_senal})
 
@@ -563,22 +633,22 @@ class SenalServiceV2:
                 sd.fecha_actualizacion,
                 sd.score_riesgo,
                 cs.nombre_categoria_senal,
-                cs.descripcion_categoria_senal,
+                cs.descripcion,
                 COALESCE(
-                    cs.color_categoria,
+                    cs.color,
                     CASE 
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%ruido%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%ruido%' THEN '#808080'
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%problemas menores%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%problemas menores%' OR LOWER(cs.nombre_categoria_senal) LIKE '%problema menor%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%problema menor%' THEN '#00FF00'
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%paracrisis%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%paracrisis%' THEN '#FFA500' 
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%crisis%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%crisis%' THEN '#FF0000'
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%rojo%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%rojo%' THEN '#FF0000'
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%amarillo%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%amarillo%' THEN '#FFFF00'
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%verde%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%verde%' THEN '#00FF00'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%ruido%' OR LOWER(cs.descripcion) LIKE '%ruido%' THEN '#808080'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%problemas menores%' OR LOWER(cs.descripcion) LIKE '%problemas menores%' OR LOWER(cs.nombre_categoria_senal) LIKE '%problema menor%' OR LOWER(cs.descripcion) LIKE '%problema menor%' THEN '#00FF00'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%paracrisis%' OR LOWER(cs.descripcion) LIKE '%paracrisis%' THEN '#FFA500' 
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%crisis%' OR LOWER(cs.descripcion) LIKE '%crisis%' THEN '#FF0000'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%rojo%' OR LOWER(cs.descripcion) LIKE '%rojo%' THEN '#FF0000'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%amarillo%' OR LOWER(cs.descripcion) LIKE '%amarillo%' THEN '#FFFF00'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%verde%' OR LOWER(cs.descripcion) LIKE '%verde%' THEN '#00FF00'
                         ELSE '#CCCCCC'
                     END
                 ) as color
             FROM sds.senal_detectada sd
-            JOIN sds.categoria_senal cs ON sd.id_categoria_senal = cs.id_categoria_senales
+            JOIN sds.categoria_senal cs ON sd.id_categoria_senal = cs.id_categoria_senal
             WHERE sd.id_senal_detectada = :id_senal
         """), {"id_senal": id_senal})
 
@@ -626,7 +696,7 @@ class SenalServiceV2:
     ) -> Optional[dict]:
         current_row = await self.db.execute(
             text("""
-                SELECT id_categoria_senal, id_categoria_analisis_senal, score_riesgo, fecha_deteccion
+                SELECT id_categoria_senal, id_categoria_analisis, score_riesgo, fecha_deteccion
                 FROM sds.senal_detectada
                 WHERE id_senal_detectada = :id_senal
             """),
@@ -645,8 +715,8 @@ class SenalServiceV2:
             params["id_categoria_senal"] = payload.id_categoria_senal
 
         if payload.id_categoria_analisis_senal is not None:
-            updates.append("id_categoria_analisis_senal = :id_categoria_analisis_senal")
-            params["id_categoria_analisis_senal"] = payload.id_categoria_analisis_senal
+            updates.append("id_categoria_analisis = :id_categoria_analisis")
+            params["id_categoria_analisis"] = payload.id_categoria_analisis_senal
 
         if payload.score_riesgo is not None:
             updates.append("score_riesgo = :score_riesgo")
@@ -663,7 +733,7 @@ class SenalServiceV2:
                 UPDATE sds.senal_detectada
                 SET {", ".join(updates)}
                 WHERE id_senal_detectada = :id_senal
-                RETURNING id_senal_detectada, id_categoria_senal, id_categoria_analisis_senal, score_riesgo, fecha_deteccion, fecha_actualizacion
+                RETURNING id_senal_detectada, id_categoria_senal, id_categoria_analisis, score_riesgo, fecha_deteccion, fecha_actualizacion
             """),
             params
         )
@@ -752,7 +822,7 @@ class SenalServiceV2:
             return None
         result = await self.db.execute(
             select(CategoriaSenal.nombre_categoria_senal).where(
-                CategoriaSenal.id_categoria_senales == id_categoria
+                CategoriaSenal.id_categoria_senal == id_categoria
             )
         )
         return result.scalar_one_or_none()
@@ -853,23 +923,19 @@ class SenalServiceV2:
         updates = []
         params = {"id_categoria_senal": id_categoria_senal}
         if payload.color_categoria is not None:
-            updates.append("color_categoria = :color_nuevo")
+            updates.append("color = :color_nuevo")
             params["color_nuevo"] = payload.color_categoria
         if payload.descripcion_categoria_senal is not None:
-            updates.append("descripcion_categoria_senal = :descripcion")
+            updates.append("descripcion = :descripcion")
             params["descripcion"] = payload.descripcion_categoria_senal
-        updates.append("ultimo_usuario_id = :ultimo_usuario_id")
-        updates.append("ultimo_usuario_nombre = :ultimo_usuario_nombre")
-        updates.append("ultima_actualizacion = NOW()")
-        params["ultimo_usuario_id"] = usuario_id
-        params["ultimo_usuario_nombre"] = usuario_nombre
+        updates.append("fecha_actualizacion = NOW()")
 
         result = await self.db.execute(
             text(f"""
                 UPDATE sds.categoria_senal
                 SET {", ".join(updates)}
-                WHERE id_categoria_senales = :id_categoria_senal
-                RETURNING id_categoria_senales, color_categoria, descripcion_categoria_senal, ultimo_usuario_id, ultimo_usuario_nombre, ultima_actualizacion
+                WHERE id_categoria_senal = :id_categoria_senal
+                RETURNING id_categoria_senal, color, descripcion, fecha_actualizacion
             """),
             params
         )
@@ -900,9 +966,7 @@ class SenalServiceV2:
             "id_categoria_senal": row[0],
             "color_categoria": row[1],
             "descripcion_categoria_senal": row[2],
-            "ultimo_usuario_id": row[3],
-            "ultimo_usuario_nombre": row[4],
-            "ultima_actualizacion": row[5].isoformat() if row[5] else None,
+            "ultima_actualizacion": row[3].isoformat() if row[3] else None,
             "usuario": usuario_nombre,
             "fecha_evento": evento.fecha_evento.isoformat()
         }
@@ -915,19 +979,19 @@ class SenalServiceV2:
                 sd.score_riesgo,
                 cs.nombre_categoria_senal,
                 COALESCE(
-                    cs.color_categoria,
+                    cs.color,
                     CASE 
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%ruido%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%ruido%' THEN '#808080'
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%problemas menores%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%problemas menores%' OR LOWER(cs.nombre_categoria_senal) LIKE '%problema menor%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%problema menor%' THEN '#00FF00'
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%paracrisis%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%paracrisis%' THEN '#FFA500' 
-                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%crisis%' OR LOWER(cs.descripcion_categoria_senal) LIKE '%crisis%' THEN '#FF0000'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%ruido%' OR LOWER(cs.descripcion) LIKE '%ruido%' THEN '#808080'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%problemas menores%' OR LOWER(cs.descripcion) LIKE '%problemas menores%' OR LOWER(cs.nombre_categoria_senal) LIKE '%problema menor%' OR LOWER(cs.descripcion) LIKE '%problema menor%' THEN '#00FF00'
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%paracrisis%' OR LOWER(cs.descripcion) LIKE '%paracrisis%' THEN '#FFA500' 
+                        WHEN LOWER(cs.nombre_categoria_senal) LIKE '%crisis%' OR LOWER(cs.descripcion) LIKE '%crisis%' THEN '#FF0000'
                         ELSE '#CCCCCC'
                     END
                 ) as color,
                 cas.nombre_categoria_analisis
             FROM sds.senal_detectada sd
-            JOIN sds.categoria_senal cs ON sd.id_categoria_senal = cs.id_categoria_senales
-            JOIN sds.categoria_analisis_senal cas ON sd.id_categoria_analisis_senal = cas.id_categoria_analisis_senal
+            JOIN sds.categoria_senal cs ON sd.id_categoria_senal = cs.id_categoria_senal
+            JOIN sds.categoria_analisis_senal cas ON sd.id_categoria_analisis = cas.id_categoria_analisis_senal
             WHERE sd.id_senal_detectada = :id_senal
         """), {"id_senal": id_senal})
 

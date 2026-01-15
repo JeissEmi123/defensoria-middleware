@@ -307,11 +307,18 @@ class TrustedHostMiddleware(BaseHTTPMiddleware):
         if settings.is_production:
             host = request.headers.get("host", "").split(":")[0]
             
-            if host and host not in settings.allowed_hosts:
+            # Permitir hosts de Google Cloud Run
+            cloud_run_hosts = [
+                "defensoria-middleware-prod-secure-411798681660.us-central1.run.app",
+                "defensoria-middleware-prod-411798681660.us-central1.run.app"
+            ]
+            
+            if host and host not in settings.allowed_hosts and host not in cloud_run_hosts:
                 logger.warning(
                     "host_no_permitido",
                     host=host,
-                    allowed=settings.allowed_hosts
+                    allowed=settings.allowed_hosts,
+                    cloud_run_hosts=cloud_run_hosts
                 )
                 
                 return JSONResponse(

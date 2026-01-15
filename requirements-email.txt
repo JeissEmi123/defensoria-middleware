@@ -1,2 +1,4 @@
-# Dependencias para envío de emails
-sendgrid==6.11.0
+# Dependencias para envío de emails vía Gmail API
+google-api-python-client==2.110.1
+google-auth==2.25.1
+google-auth-httplib2==0.1.0

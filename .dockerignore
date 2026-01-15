@@ -1,0 +1,81 @@
+# Archivos de configuración sensibles
+config/service-account-key.json
+config/client_secret.json
+config/gmail_token.json
+config/oauth-client-secret.json
+
+# Variables de entorno
+.env
+.env.local
+.env.production
+.env.staging
+.env.test
+
+# Archivos de desarrollo
+.git
+.gitignore
+.pytest_cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.coverage
+.vscode
+.idea
+
+# Documentación y scripts de desarrollo
+docs/
+scripts/
+AGENTS.md
+MIGRACION_ENDPOINTS_COMPLETADA.md
+PROPUESTA_ARQUITECTURA_CRUD.md
+RESUMEN_OPTIMIZACION_COMPLETADA.md
+
+# Archivos de Docker
+docker-compose.yml
+Dockerfile.dev
+.dockerignore
+
+# Cloud Build configs (no necesarios en el contenedor)
+cloudbuild*.yaml
+build-trigger-config.yaml
+
+# Tests
+test_*.py
+test_*.sh
+**/test_*
+**/*_test.py
+
+# Logs
+*.log
+logs/
+
+# Temporal y cache
+tmp/
+temp/
+.cache/
+.tmp/
+
+# Archivos de respaldo
+*.bak
+*.backup
+
+# Archivos de configuración local
+alembic.ini
+requirements-dev.txt
+run.sh
+
+# Virtual environments
+venv/
+env/
+oauth_env/
+.virtualenv/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
