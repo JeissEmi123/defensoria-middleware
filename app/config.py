@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import List, Optional
+from typing import List, Optional, Union
 from functools import lru_cache
 import json
 
@@ -36,7 +36,7 @@ class Settings(BaseSettings):
 
     # CORS
     allowed_origins: str = "[]"
-    allowed_hosts: List[str] = ["*"]
+    allowed_hosts: Union[str, List[str]] = ["*"]
     cors_allow_credentials: bool = True
     cors_allow_methods: List[str] = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
     cors_allow_headers: List[str] = ["*"]
@@ -48,6 +48,14 @@ class Settings(BaseSettings):
             return json.loads(self.allowed_origins)
         except (json.JSONDecodeError, TypeError):
             return ["*"]
+    
+    @property
+    def get_allowed_hosts(self) -> List[str]:
+        """Parse allowed_hosts from string or return list as-is"""
+        if isinstance(self.allowed_hosts, str):
+            # Handle case where it's a string from environment variable
+            return [self.allowed_hosts] if self.allowed_hosts else ["*"]
+        return self.allowed_hosts or ["*"]
 
     @property
     def is_production(self) -> bool:

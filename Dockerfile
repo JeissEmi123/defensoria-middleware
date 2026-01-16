@@ -21,10 +21,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copiar el código de la aplicación
 COPY . .
 
-# Copiar script de inicio
-COPY run.sh /app/
-RUN chmod +x /app/run.sh
-
 # Exponer el puerto
 EXPOSE 8080
 
