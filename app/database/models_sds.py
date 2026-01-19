@@ -25,40 +25,37 @@ class CategoriaSenal(Base):
     __tablename__ = 'categoria_senal'
     __table_args__ = {'schema': 'sds'}
     
-    id_categoria_senal = Column(SmallInteger, primary_key=True)
-    parent_categoria_senal_id = Column(SmallInteger)
+    id_categoria_senales = Column(SmallInteger, primary_key=True)
+    id_parent_categoria_senales = Column(SmallInteger)
     nombre_categoria_senal = Column(String(100), nullable=False)
-    descripcion = Column(Text)
+    descripcion_categoria_senal = Column(Text)
     color = Column(String(50))
     nivel = Column(SmallInteger, nullable=False)
-    activo = Column(Boolean, nullable=False, default=True)
-    fecha_creacion = Column(TIMESTAMP(timezone=True))
-    fecha_actualizacion = Column(TIMESTAMP(timezone=True))
     
     senales = relationship("SenalDetectada", back_populates="categoria_senal")
 
     @property
-    def id_categoria_senales(self) -> int:
-        return self.id_categoria_senal
+    def id_categoria_senal(self) -> int:
+        return self.id_categoria_senales
 
     @property
-    def descripcion_categoria_senal(self) -> str:
-        return self.descripcion
+    def descripcion(self) -> str:
+        return self.descripcion_categoria_senal
 
     @property
     def color_categoria(self) -> str:
         return self.color
 
     @property
-    def id_parent_categoria_senales(self) -> int:
-        return self.parent_categoria_senal_id
+    def parent_categoria_senal_id(self) -> int:
+        return self.id_parent_categoria_senales
 
 class SenalDetectada(Base):
     __tablename__ = 'senal_detectada'
     __table_args__ = {'schema': 'sds'}
     
     id_senal_detectada = Column(SmallInteger, primary_key=True)
-    id_categoria_senal = Column(SmallInteger, ForeignKey('sds.categoria_senal.id_categoria_senal'), nullable=False)
+    id_categoria_senal = Column(SmallInteger, ForeignKey('sds.categoria_senal.id_categoria_senales'), nullable=False)
     fecha_deteccion = Column(TIMESTAMP(timezone=True))
     id_categoria_analisis = Column(SmallInteger, ForeignKey('sds.categoria_analisis_senal.id_categoria_analisis_senal'), nullable=True)
     score_riesgo = Column(Numeric(5, 2))

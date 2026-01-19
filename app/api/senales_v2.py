@@ -58,16 +58,34 @@ async def _build_home_dashboard_payload(db: AsyncSession) -> HomeResponse:
     alertas = await service.obtener_alertas_criticas(limite=5)
     estadisticas = await service.obtener_estadisticas_home()
 
-    def construir_categoria_senal(senal: SenalDetectada) -> dict:
+    def construir_categoria_senal(senal) -> dict:
+        if isinstance(senal, dict):
+            categoria = senal.get("categoria_senal") or {}
+            return {
+                "id_categoria_senales": (
+                    categoria.get("id_categoria_senales")
+                    or categoria.get("id_categoria_senal")
+                    or senal.get("id_categoria_senal")
+                    or 0
+                ),
+                "nombre_categoria_senal": categoria.get("nombre_categoria_senal") or "Desconocido",
+                "descripcion_categoria_senal": categoria.get("descripcion_categoria_senal"),
+                "nivel": categoria.get("nivel"),
+                "color_categoria": categoria.get("color"),
+                "ultimo_usuario_id": categoria.get("ultimo_usuario_id"),
+                "ultimo_usuario_nombre": categoria.get("ultimo_usuario_nombre"),
+                "ultima_actualizacion": categoria.get("ultima_actualizacion"),
+            }
+
         categoria = getattr(senal, "categoria_senal", None)
         return {
             "id_categoria_senales": (
-                getattr(categoria, "id_categoria_senal", None)
+                getattr(categoria, "id_categoria_senales", None)
                 or getattr(senal, "id_categoria_senal", None)
                 or 0
             ),
             "nombre_categoria_senal": getattr(categoria, "nombre_categoria_senal", None) or "Desconocido",
-            "descripcion_categoria_senal": getattr(categoria, "descripcion", None),
+            "descripcion_categoria_senal": getattr(categoria, "descripcion_categoria_senal", None),
             "nivel": getattr(categoria, "nivel", None),
             "color_categoria": getattr(categoria, "color", None),
             "ultimo_usuario_id": getattr(categoria, "ultimo_usuario_id", None),
@@ -75,7 +93,19 @@ async def _build_home_dashboard_payload(db: AsyncSession) -> HomeResponse:
             "ultima_actualizacion": getattr(categoria, "ultima_actualizacion", None),
         }
 
-    def construir_categoria_analisis(senal: SenalDetectada) -> dict:
+    def construir_categoria_analisis(senal) -> dict:
+        if isinstance(senal, dict):
+            categoria = senal.get("categoria_analisis") or {}
+            return {
+                "id_categoria_analisis_senal": (
+                    categoria.get("id_categoria_analisis_senal")
+                    or senal.get("id_categoria_analisis")
+                    or 0
+                ),
+                "nombre_categoria_analisis": categoria.get("nombre_categoria_analisis") or "Desconocido",
+                "descripcion_categoria_analisis": categoria.get("descripcion_categoria_analisis"),
+            }
+
         categoria = getattr(senal, "categoria_analisis", None)
         return {
             "id_categoria_analisis_senal": (
@@ -89,13 +119,22 @@ async def _build_home_dashboard_payload(db: AsyncSession) -> HomeResponse:
 
     alertas_criticas = []
     for alerta in alertas:
-        alerta_payload = {
-            "id_senal_detectada": alerta.id_senal_detectada,
-            "fecha_deteccion": alerta.fecha_deteccion,
-            "score_riesgo": alerta.score_riesgo,
-            "categoria_analisis": construir_categoria_analisis(alerta),
-            "categoria_senal": construir_categoria_senal(alerta),
-        }
+        if isinstance(alerta, dict):
+            alerta_payload = {
+                "id_senal_detectada": alerta.get("id_senal_detectada"),
+                "fecha_deteccion": alerta.get("fecha_deteccion"),
+                "score_riesgo": alerta.get("score_riesgo"),
+                "categoria_analisis": construir_categoria_analisis(alerta),
+                "categoria_senal": construir_categoria_senal(alerta),
+            }
+        else:
+            alerta_payload = {
+                "id_senal_detectada": alerta.id_senal_detectada,
+                "fecha_deteccion": alerta.fecha_deteccion,
+                "score_riesgo": alerta.score_riesgo,
+                "categoria_analisis": construir_categoria_analisis(alerta),
+                "categoria_senal": construir_categoria_senal(alerta),
+            }
         alertas_criticas.append(AlertaCritica.model_validate(alerta_payload))
 
     return HomeResponse(
@@ -343,9 +382,9 @@ async def listar_categorias_senal(
         categorias = await service.listar_categorias_senal()
         return [
             {
-                "id_categoria_senal": categoria.id_categoria_senal,
+                "id_categoria_senales": categoria.id_categoria_senales,
                 "nombre_categoria_senal": categoria.nombre_categoria_senal,
-                "descripcion_categoria_senal": categoria.descripcion,
+                "descripcion_categoria_senal": categoria.descripcion_categoria_senal,
                 "color_categoria": categoria.color,
                 "nivel": categoria.nivel,
             }
