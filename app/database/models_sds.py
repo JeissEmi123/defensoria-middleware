@@ -2,6 +2,7 @@
 Modelos SQLAlchemy para el esquema SDS (Sistema de Detección de Señales) v2
 """
 from sqlalchemy import Column, SmallInteger, Text, Numeric, ForeignKey, TIMESTAMP, String, Integer, DateTime, Boolean
+from sqlalchemy.dialects.postgresql import JSONB
 from datetime import datetime
 from sqlalchemy.orm import relationship
 
@@ -31,6 +32,8 @@ class CategoriaSenal(Base):
     descripcion_categoria_senal = Column(Text)
     color = Column(String(50))
     nivel = Column(SmallInteger, nullable=False)
+    umbral_bajo = Column(Numeric(5, 2))
+    umbral_alto = Column(Numeric(5, 2))
     
     senales = relationship("SenalDetectada", back_populates="categoria_senal")
 
@@ -45,6 +48,10 @@ class CategoriaSenal(Base):
     @property
     def color_categoria(self) -> str:
         return self.color
+
+    @color_categoria.setter
+    def color_categoria(self, value: str):
+        self.color = value
 
     @property
     def parent_categoria_senal_id(self) -> int:
@@ -73,6 +80,7 @@ class SenalDetectada(Base):
     categoria_senal = relationship("CategoriaSenal", foreign_keys=[id_categoria_senal], lazy="joined")
     categoria_analisis = relationship("CategoriaAnalisisSenal", foreign_keys=[id_categoria_analisis], lazy="joined")
     resultados_observacion = relationship("ResultadoObservacionSenal", back_populates="senal", lazy="joined")
+    historial = relationship("HistorialSenal", back_populates="senal", cascade="all, delete-orphan")
 
 class CategoriaObservacion(Base):
     __tablename__ = 'categoria_observacion'
@@ -204,9 +212,39 @@ class Entidad(Base):
     __tablename__ = 'entidades'
     __table_args__ = {'schema': 'sds'}
 
-    id_entidades = Column(SmallInteger, primary_key=True)
+    id_entidad = Column('id_entidades', SmallInteger, primary_key=True)
     nombre_entidad = Column(Text)
     peso_entidad = Column(Numeric(5, 2))
     id_categoria_observacion = Column(SmallInteger, ForeignKey('sds.categoria_observacion.id_categoria_observacion'))
 
     categoria_observacion = relationship("CategoriaObservacion", back_populates="entidades")
+
+
+class HistorialSenal(Base):
+    """
+    Historial de cambios y acciones sobre señales detectadas en esquema SDS.
+    Proporciona trazabilidad completa de las señales.
+    """
+    __tablename__ = 'historial_senal'
+    __table_args__ = {'schema': 'sds'}
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    id_senal_detectada = Column(Integer, ForeignKey('sds.senal_detectada.id_senal_detectada', ondelete='CASCADE'), 
+        nullable=False)
+    usuario_id = Column(Integer, ForeignKey('usuarios.id', ondelete='SET NULL'), 
+        nullable=True)
+    accion = Column(String(100), nullable=False,
+        comment='Tipo de acción: CREACION, ASIGNACION, CAMBIO_ESTADO, RESOLUCION, actualizacion_senal, etc.')
+    descripcion = Column(Text, nullable=True)
+    estado_anterior = Column(String(50), nullable=True)
+    estado_nuevo = Column(String(50), nullable=True)
+    datos_adicionales = Column(JSONB, nullable=True,
+        comment='Datos adicionales de la acción en formato JSON')
+    fecha_registro = Column(TIMESTAMP(timezone=True), nullable=False, default=datetime.now)
+    ip_address = Column(String(45), nullable=True)
+    
+    # Relación con señal detectada
+    senal = relationship("SenalDetectada", back_populates="historial")
+    
+    def __repr__(self):
+        return f"<HistorialSenal(id={self.id}, senal_id={self.id_senal_detectada}, accion='{self.accion}')>"
