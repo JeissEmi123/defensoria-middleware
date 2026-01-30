@@ -13,12 +13,14 @@ from app.database.models_sds import (
     SenalDetectada,
     CategoriaSenal,
     CategoriaAnalisisSenal,
-    ResultadoObservacionSenal
+    ResultadoObservacionSenal,
+    HistorialSenal
 )
 from app.schemas.senales_v2 import FiltrosSenales
 from app.database.models import EventoAuditoria
 from app.config import settings
 from app.services.email_service import email_service
+from app.core.json_utils import serialize_decimal, safe_json_dumps
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +68,11 @@ class SenalServiceV2:
             ["descripcion_categoria_senal", "descripcion"],
             fallback=None
         )
-        cs_color_col = "color" if "color" in cs_columns else None
+        cs_color_col = None
+        if "color" in cs_columns:
+            cs_color_col = "color"
+        elif "color_categoria" in cs_columns:
+            cs_color_col = "color_categoria"
 
         desc_expr = f"cs.{cs_desc_col}" if cs_desc_col else "NULL"
         color_expr = f"cs.{cs_color_col}" if cs_color_col else "NULL"
@@ -147,6 +153,8 @@ class SenalServiceV2:
                 conditions.append(SenalDetectada.id_categoria_analisis == filtros.id_categoria_analisis_senal)
             if filtros.id_categoria_senal:
                 conditions.append(SenalDetectada.id_categoria_senal == filtros.id_categoria_senal)
+            if filtros.estado:
+                conditions.append(SenalDetectada.estado == filtros.estado)
             if filtros.fecha_desde:
                 conditions.append(SenalDetectada.fecha_deteccion >= filtros.fecha_desde)
             if filtros.fecha_hasta:
@@ -167,6 +175,8 @@ class SenalServiceV2:
                 conditions.append(SenalDetectada.id_categoria_analisis == filtros.id_categoria_analisis_senal)
             if filtros.id_categoria_senal:
                 conditions.append(SenalDetectada.id_categoria_senal == filtros.id_categoria_senal)
+            if filtros.estado:
+                conditions.append(SenalDetectada.estado == filtros.estado)
             if filtros.fecha_desde:
                 conditions.append(SenalDetectada.fecha_deteccion >= filtros.fecha_desde)
             if filtros.fecha_hasta:
@@ -254,7 +264,7 @@ class SenalServiceV2:
             alertas.append({
                 "id_senal_detectada": row[0],
                 "fecha_deteccion": row[1],
-                "score_riesgo": float(row[2]) if row[2] is not None else None,
+                "score_riesgo": serialize_decimal(row[2]),
                 "categoria_analisis": {
                     "id_categoria_analisis_senal": row[3],
                     "nombre_categoria_analisis": row[4],
@@ -363,7 +373,7 @@ class SenalServiceV2:
                 "titulo": row[1],
                 "categoria": row[2],
                 "color": row[3],
-                "score_riesgo": float(row[4]),
+                "score_riesgo": serialize_decimal(row[4]),
                 "fecha_deteccion": row[5].isoformat(),
                 "categoria_analisis": row[6],
                 "usuario": row[7],
@@ -376,6 +386,7 @@ class SenalServiceV2:
         self,
         id_senal_detectada: Optional[str],
         categoria: Optional[str],
+        estado: Optional[str],
         fecha_desde: Optional[str],
         fecha_hasta: Optional[str],
         score_min: Optional[float],
@@ -418,6 +429,10 @@ class SenalServiceV2:
             where_conditions.append("sd.score_riesgo <= :score_max")
             params['score_max'] = score_max
 
+        if estado:
+            where_conditions.append("sd.estado = :estado")
+            params["estado"] = estado
+
         where_clause = "WHERE " + " AND ".join(where_conditions) if where_conditions else ""
 
         parts = await self._build_senal_query_parts()
@@ -446,6 +461,7 @@ class SenalServiceV2:
                 ) as color,
                 sd.score_riesgo,
                 sd.fecha_deteccion,
+                sd.estado,
                 cas.nombre_categoria_analisis,
                 'Sistema' as usuario,
                 sd.fecha_deteccion as fecha_evento
@@ -466,11 +482,12 @@ class SenalServiceV2:
                 "titulo": row[1],
                 "categoria": row[2],
                 "color": row[3],
-                "score_riesgo": float(row[4]),
+                "score_riesgo": serialize_decimal(row[4]),
                 "fecha_deteccion": row[5].isoformat(),
-                "categoria_analisis": row[6],
-                "usuario": row[7],
-                "fecha_evento": row[8].isoformat() if row[8] else None
+                "estado": row[6],
+                "categoria_analisis": row[7],
+                "usuario": row[8],
+                "fecha_evento": row[9].isoformat() if row[9] else None
             })
 
         count_result = await self.db.execute(text(f"""
@@ -488,6 +505,7 @@ class SenalServiceV2:
             "filtros_aplicados": {
                 "id_senal_detectada": id_senal_detectada,
                 "categoria": categoria,
+                "estado": estado,
                 "fecha_desde": fecha_desde,
                 "fecha_hasta": fecha_hasta,
                 "score_min": score_min,
@@ -617,6 +635,7 @@ class SenalServiceV2:
                 sd.fecha_deteccion,
                 sd.fecha_actualizacion,
                 sd.score_riesgo,
+                sd.estado,
                 cas.id_categoria_analisis_senal,
                 cas.nombre_categoria_analisis,
                 cas.descripcion_categoria_analisis,
@@ -657,19 +676,27 @@ class SenalServiceV2:
             "id_senal_detectada": senal_row[0],
             "fecha_deteccion": senal_row[1].isoformat(),
             "fecha_actualizacion": senal_row[2].isoformat(),
-            "score_riesgo": float(senal_row[3]),
+            "score_riesgo": serialize_decimal(senal_row[3]),
+            "estado": senal_row[4],
             "categoria_analisis": {
-                "id_categoria_analisis_senal": senal_row[4],
-                "nombre_categoria_analisis": senal_row[5],
-                "descripcion_categoria_analisis": senal_row[6]
+                "id_categoria_analisis_senal": senal_row[5],
+                "nombre_categoria_analisis": senal_row[6],
+                "descripcion_categoria_analisis": senal_row[7]
             },
             "categoria_senal": {
-                "id_categoria_senal": senal_row[7],
-                "nombre_categoria_senal": senal_row[8],
-                "descripcion_categoria_senal": senal_row[9],
-                "nivel": senal_row[10]
+                "id_categoria_senal": senal_row[8],
+                "nombre_categoria_senal": senal_row[9],
+                "descripcion_categoria_senal": senal_row[10],
+                "nivel": senal_row[11]
             },
-            "resultados_observacion": resultados_observacion
+            "resultados_observacion": [
+                {
+                    "codigo_categoria_observacion": obs_row[0],
+                    "resultado_observacion_categoria": serialize_decimal(obs_row[1]),
+                    "nombre_categoria_observacion": obs_row[2]
+                }
+                for obs_row in obs_result
+            ]
         }
 
     async def obtener_resumen_senal(self, id_senal: int) -> Optional[dict]:
@@ -720,7 +747,7 @@ class SenalServiceV2:
             "categoria_senal": senal_row[3],
             "color": senal_row[5],
             "descripcion": senal_row[4],
-            "score_riesgo": float(senal_row[2]) if senal_row[2] is not None else None
+            "score_riesgo": serialize_decimal(senal_row[2])
         }
 
     async def actualizar_senal(
@@ -736,9 +763,24 @@ class SenalServiceV2:
         parts = await self._build_senal_query_parts()
         sd_cat_analisis_col = parts["sd_cat_analisis_col"]
 
+        # Verificar qué columnas existen en la tabla
+        sd_columns = await self._get_table_columns("sds", "senal_detectada")
+        has_estado = "estado" in sd_columns
+        has_fecha_actualizacion = "fecha_actualizacion" in sd_columns
+
+        # Construir la consulta SELECT considerando columnas disponibles
+        select_columns = [
+            "id_categoria_senal", 
+            sd_cat_analisis_col, 
+            "score_riesgo", 
+            "fecha_deteccion"
+        ]
+        if has_estado:
+            select_columns.append("estado")
+
         current_row = await self.db.execute(
             text(f"""
-                SELECT id_categoria_senal, {sd_cat_analisis_col}, score_riesgo, fecha_deteccion
+                SELECT {", ".join(select_columns)}
                 FROM sds.senal_detectada
                 WHERE id_senal_detectada = :id_senal
             """),
@@ -768,14 +810,32 @@ class SenalServiceV2:
             updates.append("fecha_deteccion = :fecha_deteccion")
             params["fecha_deteccion"] = payload.fecha_deteccion
 
-        updates.append("fecha_actualizacion = NOW()")
+        if payload.estado is not None and has_estado:
+            updates.append("estado = :estado")
+            params["estado"] = payload.estado
+
+        if has_fecha_actualizacion:
+            updates.append("fecha_actualizacion = NOW()")
+
+        # Construir la consulta RETURNING considerando columnas disponibles  
+        returning_columns = [
+            "id_senal_detectada",
+            "id_categoria_senal", 
+            sd_cat_analisis_col,
+            "score_riesgo", 
+            "fecha_deteccion"
+        ]
+        if has_estado:
+            returning_columns.append("estado")
+        if has_fecha_actualizacion:
+            returning_columns.append("fecha_actualizacion")
 
         result = await self.db.execute(
             text(f"""
                 UPDATE sds.senal_detectada
                 SET {", ".join(updates)}
                 WHERE id_senal_detectada = :id_senal
-                RETURNING id_senal_detectada, id_categoria_senal, {sd_cat_analisis_col}, score_riesgo, fecha_deteccion, fecha_actualizacion
+                RETURNING {", ".join(returning_columns)}
             """),
             params
         )
@@ -787,25 +847,46 @@ class SenalServiceV2:
             payload.id_categoria_senal is not None
             and row[1] != categoria_previa
         )
-        fecha_actualizacion_iso = row[5].isoformat() if row[5] else None
+        
+        # Manejar índices de columnas dinámicamente
+        fecha_actualizacion_iso = None
+        if has_fecha_actualizacion and len(row) > len(returning_columns) - 1:
+            fecha_actualizacion_idx = len(returning_columns) - 1
+            if row[fecha_actualizacion_idx]:
+                fecha_actualizacion_iso = row[fecha_actualizacion_idx].isoformat()
+
+        # Construir datos antes/después considerando columnas disponibles
+        estado_antes = antes[4] if has_estado and len(antes) > 4 else None
+        estado_despues = None
+        if has_estado:
+            estado_idx = returning_columns.index("estado")
+            estado_despues = row[estado_idx] if len(row) > estado_idx else None
 
         datos_adicionales = {
             "usuario_nombre": usuario_nombre,
             "antes": {
                 "id_categoria_senal": antes[0],
                 "id_categoria_analisis_senal": antes[1],
-                "score_riesgo": float(antes[2]) if antes[2] is not None else None,
-                "fecha_deteccion": antes[3].isoformat() if antes[3] else None
+                "score_riesgo": serialize_decimal(antes[2]),
+                "fecha_deteccion": antes[3].isoformat() if antes[3] else None,
+                "estado": estado_antes
             },
             "despues": {
                 "id_categoria_senal": row[1],
                 "id_categoria_analisis_senal": row[2],
-                "score_riesgo": float(row[3]) if row[3] is not None else None,
-                "fecha_deteccion": row[4].isoformat() if row[4] else None
+                "score_riesgo": serialize_decimal(row[3]),
+                "fecha_deteccion": row[4].isoformat() if row[4] else None,
+                "estado": estado_despues
             },
             "confirmo_revision": payload.confirmo_revision,
             "cambio_tipo_categoria": cambio_tipo_categoria
         }
+
+        descripcion_cambio = payload.descripcion_cambio.strip() if payload.descripcion_cambio else None
+        if descripcion_cambio:
+            datos_adicionales["descripcion_cambio"] = descripcion_cambio
+
+        descripcion_evento = descripcion_cambio or "Actualización de señal (categoría/análisis/score/fecha)"
 
         audit_row = None
         if parts["has_historial"]:
@@ -823,11 +904,11 @@ class SenalServiceV2:
                 {
                     "id_senal": id_senal,
                     "usuario_id": usuario_id,
-                    "accion": "actualizacion_senal",
-                    "descripcion": "Actualización de señal (categoría/análisis/score/fecha)",
-                    "estado_anterior": None,
-                    "estado_nuevo": None,
-                    "datos_adicionales": json.dumps(datos_adicionales),
+                    "accion": "Actualizacion_estado_señal",
+                    "descripcion": descripcion_evento,
+                    "estado_anterior": estado_antes,
+                    "estado_nuevo": estado_despues,
+                    "datos_adicionales": safe_json_dumps(datos_adicionales),
                     "ip_address": ip_address
                 }
             )
@@ -847,19 +928,125 @@ class SenalServiceV2:
                 fecha_actualizacion=fecha_actualizacion_iso
             )
 
-        return {
+        # Construir respuesta con índices dinámicos
+        response = {
             "id_senal_detectada": row[0],
             "id_categoria_senal": row[1],
             "id_categoria_analisis_senal": row[2],
-            "score_riesgo": float(row[3]) if row[3] is not None else None,
+            "score_riesgo": serialize_decimal(row[3]),
             "fecha_deteccion": row[4].isoformat() if row[4] else None,
-            "fecha_actualizacion": row[5].isoformat() if row[5] else None,
-            "auditoria": {
-                "id": audit_row[0] if audit_row else None,
-                "usuario": usuario_nombre,
-                "fecha_registro": audit_row[1].isoformat() if audit_row and audit_row[1] else None
-            }
         }
+        
+        # Agregar estado si está disponible
+        if has_estado:
+            estado_idx = returning_columns.index("estado")
+            response["estado"] = row[estado_idx] if len(row) > estado_idx else None
+
+        # Agregar fecha_actualizacion si está disponible  
+        if has_fecha_actualizacion:
+            fecha_idx = returning_columns.index("fecha_actualizacion")
+            response["fecha_actualizacion"] = row[fecha_idx].isoformat() if len(row) > fecha_idx and row[fecha_idx] else None
+
+        response["auditoria"] = {
+            "id": audit_row[0] if audit_row else None,
+            "usuario": usuario_nombre,
+            "fecha_registro": audit_row[1].isoformat() if audit_row and audit_row[1] else None
+        }
+
+        return serialize_decimal(response)
+
+    async def listar_historial_senal(
+        self,
+        usuario_id: Optional[int] = None,
+        id_senal: Optional[int] = None,
+        skip: int = 0,
+        limit: int = 100
+    ) -> List[dict]:
+        if not await self._table_exists("sds", "historial_senal"):
+            return []
+
+        has_usuarios = await self._table_exists("public", "usuarios")
+        join_usuarios = "LEFT JOIN public.usuarios u ON u.id = hs.usuario_id" if has_usuarios else ""
+        usuario_select = "u.nombre_usuario as usuario_nombre" if has_usuarios else "NULL as usuario_nombre"
+
+        conditions = []
+        params = {"limit": limit, "offset": skip}
+        if usuario_id is not None:
+            conditions.append("hs.usuario_id = :usuario_id")
+            params["usuario_id"] = usuario_id
+        if id_senal is not None:
+            conditions.append("hs.id_senal_detectada = :id_senal")
+            params["id_senal"] = id_senal
+
+        where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
+
+        result = await self.db.execute(
+            text(f"""
+                SELECT
+                    hs.id,
+                    hs.id_senal_detectada,
+                    hs.usuario_id,
+                    {usuario_select},
+                    hs.accion,
+                    hs.descripcion,
+                    hs.estado_anterior,
+                    hs.estado_nuevo,
+                    hs.fecha_registro,
+                    hs.ip_address,
+                    hs.datos_adicionales
+                FROM sds.historial_senal hs
+                {join_usuarios}
+                {where_clause}
+                ORDER BY hs.fecha_registro DESC
+                LIMIT :limit OFFSET :offset
+            """),
+            params
+        )
+        rows = result.fetchall()
+
+        historial = []
+        for row in rows:
+            datos = row[10]
+            if isinstance(datos, str):
+                try:
+                    datos = json.loads(datos)
+                except json.JSONDecodeError:
+                    datos = None
+
+            descripcion_cambio = None
+            cambio_tipo_categoria = None
+            confirmo_revision = None
+            categoria_antes = None
+            categoria_despues = None
+            if isinstance(datos, dict):
+                descripcion_cambio = datos.get("descripcion_cambio")
+                cambio_tipo_categoria = datos.get("cambio_tipo_categoria")
+                confirmo_revision = datos.get("confirmo_revision")
+                antes = datos.get("antes") or {}
+                despues = datos.get("despues") or {}
+                categoria_antes = antes.get("id_categoria_senal")
+                categoria_despues = despues.get("id_categoria_senal")
+
+            historial.append({
+                "id": row[0],
+                "id_senal_detectada": row[1],
+                "usuario_id": row[2],
+                "usuario_nombre": row[3],
+                "accion": row[4],
+                "descripcion": row[5],
+                "estado_anterior": row[6],
+                "estado_nuevo": row[7],
+                "fecha_registro": row[8],
+                "ip_address": row[9],
+                "descripcion_cambio": descripcion_cambio,
+                "cambio_tipo_categoria": cambio_tipo_categoria,
+                "confirmo_revision": confirmo_revision,
+                "categoria_senal_antes": categoria_antes,
+                "categoria_senal_despues": categoria_despues,
+                "datos_adicionales": datos
+            })
+
+        return historial
 
     async def _obtener_nombre_categoria_senal(self, id_categoria: Optional[int]) -> Optional[str]:
         if id_categoria is None:
@@ -964,22 +1151,58 @@ class SenalServiceV2:
         ip_address: Optional[str],
         user_agent: str
     ) -> Optional[dict]:
+        cs_columns = await self._get_table_columns("sds", "categoria_senal")
+        color_col = None
+        if "color" in cs_columns:
+            color_col = "color"
+        elif "color_categoria" in cs_columns:
+            color_col = "color_categoria"
+
+        desc_col = None
+        if "descripcion_categoria_senal" in cs_columns:
+            desc_col = "descripcion_categoria_senal"
+        elif "descripcion" in cs_columns:
+            desc_col = "descripcion"
+
+        has_fecha_actualizacion = "fecha_actualizacion" in cs_columns
+
         updates = []
         params = {"id_categoria_senal": id_categoria_senal}
         if payload.color_categoria is not None:
-            updates.append("color = :color_nuevo")
-            params["color_nuevo"] = payload.color_categoria
+            if color_col:
+                updates.append(f"{color_col} = :color_nuevo")
+                params["color_nuevo"] = payload.color_categoria
+            else:
+                logger.warning("No se encontro columna de color en sds.categoria_senal")
         if payload.descripcion_categoria_senal is not None:
-            updates.append("descripcion_categoria_senal = :descripcion_categoria_senal")
-            params["descripcion_categoria_senal"] = payload.descripcion_categoria_senal
-        updates.append("fecha_actualizacion = NOW()")
+            if desc_col:
+                updates.append(f"{desc_col} = :descripcion_categoria_senal")
+                params["descripcion_categoria_senal"] = payload.descripcion_categoria_senal
+            else:
+                logger.warning("No se encontro columna de descripcion en sds.categoria_senal")
+
+        if updates and has_fecha_actualizacion:
+            updates.append("fecha_actualizacion = NOW()")
+        if not updates:
+            return None
+
+        color_return = f"{color_col} as color" if color_col else "NULL as color"
+        desc_return = f"{desc_col} as descripcion_categoria_senal" if desc_col else "NULL as descripcion_categoria_senal"
+        fecha_return = "fecha_actualizacion" if has_fecha_actualizacion else "NULL as fecha_actualizacion"
+
+        # Solo incluir fecha_actualizacion en el RETURNING si la columna existe
+        returning_cols = [f"id_categoria_senales, {color_return}, {desc_return}"]
+        if has_fecha_actualizacion:
+            returning_cols.append("fecha_actualizacion")
+        else:
+            returning_cols.append("NULL as fecha_actualizacion")
 
         result = await self.db.execute(
             text(f"""
                 UPDATE sds.categoria_senal
                 SET {", ".join(updates)}
                 WHERE id_categoria_senales = :id_categoria_senal
-                RETURNING id_categoria_senales, color, descripcion_categoria_senal, fecha_actualizacion
+                RETURNING {", ".join(returning_cols)}
             """),
             params
         )
@@ -1039,12 +1262,56 @@ class SenalServiceV2:
             "senal_base": {
                 "id_senal_detectada": senal_data[0],
                 "fecha_deteccion": senal_data[1].isoformat(),
-                "score_riesgo": float(senal_data[2]),
+                "score_riesgo": serialize_decimal(senal_data[2]),
                 "categoria_senal": senal_data[3],
                 "color": senal_data[4],
                 "categoria_analisis": senal_data[5]
             },
             "observaciones_multidimensionales": [],
             "total_observaciones": 0,
-            "score_total": float(senal_data[2])
+            "score_total": serialize_decimal(senal_data[2])
         }
+
+    async def registrar_historial_senal(
+        self,
+        id_senal_detectada: int,
+        accion: str,
+        descripcion: Optional[str] = None,
+        estado_anterior: Optional[str] = None,
+        estado_nuevo: Optional[str] = None,
+        datos_adicionales: Optional[dict] = None,
+        usuario_id: Optional[int] = None,
+        ip_address: Optional[str] = None
+    ) -> HistorialSenal:
+        """
+        Registra un nuevo evento en el historial de una señal usando SQLAlchemy ORM.
+        
+        Args:
+            id_senal_detectada: ID de la señal
+            accion: Tipo de acción (CREACION, ACTUALIZACION, CAMBIO_ESTADO, etc.)
+            descripcion: Descripción del evento
+            estado_anterior: Estado previo (opcional)
+            estado_nuevo: Estado nuevo (opcional)
+            datos_adicionales: Datos JSON adicionales (opcional)
+            usuario_id: ID del usuario que realiza la acción (opcional)
+            ip_address: Dirección IP del cliente (opcional)
+            
+        Returns:
+            HistorialSenal: Registro del historial creado
+        """
+        historial_entry = HistorialSenal(
+            id_senal_detectada=id_senal_detectada,
+            accion=accion,
+            descripcion=descripcion,
+            estado_anterior=estado_anterior,
+            estado_nuevo=estado_nuevo,
+            datos_adicionales=datos_adicionales,
+            usuario_id=usuario_id,
+            ip_address=ip_address,
+            fecha_registro=datetime.now()
+        )
+        
+        self.db.add(historial_entry)
+        await self.db.flush()  # Para obtener el ID generado
+        
+        return historial_entry
