@@ -1,7 +1,7 @@
 steps:
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
-    args: ['build', '-t', 'gcr.io/$PROJECT_ID/defensoria-middleware:$COMMIT_SHA', '-t', 'gcr.io/$PROJECT_ID/defensoria-middleware:latest', '.']
+    args: ['build', '--no-cache', '-t', 'gcr.io/$PROJECT_ID/defensoria-middleware:$COMMIT_SHA', '-t', 'gcr.io/$PROJECT_ID/defensoria-middleware:latest', '.']
 
   # Push the container image to Container Registry
   - name: 'gcr.io/cloud-builders/docker'
@@ -25,13 +25,9 @@ steps:
       - 'managed'
       - '--allow-unauthenticated'
       - '--set-env-vars'
-      - 'APP_ENV=production,DATABASE_URL=postgresql+asyncpg://app_user:AppUser2026!@/defensoria_db?host=/cloudsql/sat-defensoriapueblo:us-central1:defensoria-db,GMAIL_USE_OAUTH=true,GMAIL_TOKEN_FILE=/app/config/gmail-token.pickle,GMAIL_OAUTH_CLIENT_SECRET_FILE=/app/config/oauth-client-secret.json,GMAIL_SERVICE_ACCOUNT_FILE=/app/config/service-account-key.json,EMAIL_FROM=jcamargom@agatadata.com,COORDINADOR_EMAIL=jcamargom@agatadata.com,GCP_PROJECT_ID=sat-defensoriapueblo'
+      - 'APP_ENV=production,DATABASE_URL=postgresql+asyncpg://app_user:AppUser2026!@/defensoria_db?host=/cloudsql/sat-defensoriapueblo:us-central1:defensoria-db,POSTGRES_USER=app_user,POSTGRES_PASSWORD=AppUser2026!,POSTGRES_DB=defensoria_db,POSTGRES_PORT=5432,EMAIL_SERVICE=none,EMAIL_FROM=jcamargom@agatadata.com,COORDINADOR_EMAIL=jcamargom@agatadata.com,GCP_PROJECT_ID=sat-defensoriapueblo,GMAIL_USE_OAUTH=false,LOG_LEVEL=INFO,DEBUG=false'
       - '--update-secrets'
-      - '/app/config/oauth-client-secret.json=oauth-client-secret:latest'
-      - '--update-secrets'
-      - '/app/config/gmail-token.pickle=gmail-token-pickle:latest'
-      - '--update-secrets'
-      - '/app/config/service-account-key.json=service-account-key:latest'
+      - '/app/config-bundle.tar.gz=defensoria-config-bundle:latest'
       - '--add-cloudsql-instances'
       - 'sat-defensoriapueblo:us-central1:defensoria-db'
       - '--min-instances'

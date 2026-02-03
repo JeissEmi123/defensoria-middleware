@@ -8,6 +8,7 @@ from typing import Optional
 
 from app.database.session import get_db_session
 from app.services.senal_service_v2 import SenalServiceV2
+from app.core.json_utils import serialize_decimal
 from app.schemas.senales_v2 import (
     SenalesListResponse,
     SenalDetectadaListItem,

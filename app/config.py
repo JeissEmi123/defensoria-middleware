@@ -105,6 +105,14 @@ class Settings(BaseSettings):
     gmail_token_file: Optional[str] = None
     email_from: Optional[str] = None
 
+    # Email Service Configuration
+    email_service: Optional[str] = None
+    smtp_host: Optional[str] = None
+    smtp_port: Optional[int] = None
+    smtp_username: Optional[str] = None
+    smtp_password: Optional[str] = None
+    smtp_use_tls: Optional[bool] = None
+
     # Notificaciones
     coordinador_email: Optional[str] = None
 
@@ -133,6 +141,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = False
+        extra = "ignore"  # Ignorar campos extra no definidos
 
 
 @lru_cache()
