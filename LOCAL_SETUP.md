@@ -14,6 +14,12 @@ Esta guía te ayudará a configurar el entorno de desarrollo local para el middl
 - **Git** - [Descargar](https://git-scm.com/downloads)
 - **Docker** (Opcional) - [Descargar](https://docker.com/get-started)
 
+### Equipo nuevo (sin herramientas)
+```bash
+./bootstrap.sh
+```
+Si falta algo, el script muestra comandos sugeridos segun el sistema operativo.
+
 ### Verificar Instalaciones
 ```bash
 python --version    # Debe ser 3.11+
@@ -26,12 +32,19 @@ docker --version   # Opcional
 
 ##  Instalación Rápida (Recomendada)
 
+### Comando único (equipo nuevo)
+```bash
+./dev-up.sh
+```
+
+Este comando levanta la base de datos y la API con Docker y deja el servicio listo en http://localhost:9000
+
 ### Opción 1: Docker Compose (Más Fácil)
 
 ```bash
 # 1. Clonar repositorio
-git clone https://github.com/agata-dp/sds-dp.git
-cd sds-dp/apps/backend
+git clone https://github.com/JeissEmi123/defensoria-middleware.git
+cd defensoria-middleware
 
 # 2. Configurar variables de entorno
 cp .env.example .env.docker
@@ -52,8 +65,8 @@ curl http://localhost:9000/health
 ### 1. Clonar el Repositorio
 
 ```bash
-git clone https://github.com/agata-dp/sds-dp.git
-cd sds-dp/apps/backend
+git clone https://github.com/JeissEmi123/defensoria-middleware.git
+cd defensoria-middleware
 ```
 
 ### 2. Crear Entorno Virtual
@@ -189,7 +202,7 @@ python scripts/insertar_senales_prueba.py
 
 ```bash
 # Opción 1: Con uvicorn directamente
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app.main:app --host 0.0.0.0 --port 9000 --reload
 
 # Opción 2: Con el script incluido
 chmod +x run.sh
@@ -205,19 +218,19 @@ python -m app.main
 
 ### 1. Health Check
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:9000/health
 # Respuesta esperada: {"status": "healthy"}
 ```
 
 ### 2. Documentación API
 Abrir en el navegador:
-- **Swagger UI**: http://localhost:8000/docs
-- **ReDoc**: http://localhost:8000/redoc
+- **Swagger UI**: http://localhost:9000/docs
+- **ReDoc**: http://localhost:9000/redoc
 
 ### 3. Test de Autenticación
 ```bash
 # Crear usuario de prueba (si no existe)
-curl -X POST "http://localhost:8000/auth/register" \
+curl -X POST "http://localhost:9000/auth/register" \
   -H "Content-Type: application/json" \
   -d '{
     "username": "testuser",
@@ -227,7 +240,7 @@ curl -X POST "http://localhost:8000/auth/register" \
   }'
 
 # Iniciar sesión
-curl -X POST "http://localhost:8000/auth/login" \
+curl -X POST "http://localhost:9000/auth/login" \
   -H "Content-Type: application/json" \
   -d '{
     "username": "testuser",
@@ -484,11 +497,11 @@ alembic upgrade head --sql  # Ver SQL sin ejecutar
 ### 4. Puerto en Uso
 ```bash
 # Encontrar proceso usando el puerto
-lsof -i :8000  # Linux/macOS
-netstat -ano | findstr :8000  # Windows
+lsof -i :9000  # Linux/macOS
+netstat -ano | findstr :9000  # Windows
 
 # Cambiar puerto en la aplicación
-uvicorn app.main:app --port 8001
+uvicorn app.main:app --port 9001
 ```
 
 ---

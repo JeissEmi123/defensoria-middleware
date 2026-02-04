@@ -18,11 +18,17 @@ rm github-actions-key.json.
 ### Desplegar
 ```bash
 git add .
-git commit -m "feat: descripción del cambio"
-git push origin main
+git commit -m "feat: descripcion del cambio"
+# El pipeline se dispara con push a master
+git push origin master
 ```
 
-El despliegue se ejecutará automáticamente. Verifica en:
+Si trabajas en otra rama, puedes disparar el pipeline asi:
+```bash
+git push origin HEAD:master
+```
+
+El despliegue se ejecutara automaticamente. Verifica en:
 - GitHub → Actions → Deploy to Cloud Run
 
 ---
