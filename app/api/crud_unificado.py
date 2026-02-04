@@ -84,13 +84,13 @@ async def crear_figura_publica(
     db: AsyncSession = Depends(get_db_session)
 ):
     result = await db.execute(text("""
-        INSERT INTO sds.figuras_publicas (id_figura_publica, nombre_actor, peso_actor, id_categoria_observacion)
-        VALUES (nextval('sds.figuras_publicas_id_figura_publica_seq'), :nombre, :peso, :id_categoria)
+        INSERT INTO sds.figuras_publicas (nombre_actor, peso_actor, id_categoria_observacion)
+        VALUES (:nombre, :peso, :id_categoria)
         RETURNING id_figura_publica
     """), {"nombre": data.get("nombre_actor"), "peso": data.get("peso_actor"), "id_categoria": data.get("id_categoria_observacion")})
     new_id = result.scalar()
     await db.commit()
-    return {"id_figura_publica": new_id}
+    return {"id_figura_publica": new_id, "success": True}
 
 @router.get("/medios-digitales/categoria/{id_categoria}")
 async def listar_medios_digitales(
@@ -146,13 +146,13 @@ async def crear_medio_digital(
     db: AsyncSession = Depends(get_db_session)
 ):
     result = await db.execute(text("""
-        INSERT INTO sds.medios_digitales (id_medio_digital, nombre_medio_digital, peso_medio_digital, id_categoria_observacion)
-        VALUES (nextval('sds.medios_digitales_id_medio_digital_seq'), :nombre, :peso, :id_categoria)
+        INSERT INTO sds.medios_digitales (nombre_medio_digital, peso_medio_digital, id_categoria_observacion)
+        VALUES (:nombre, :peso, :id_categoria)
         RETURNING id_medio_digital
     """), {"nombre": data.get("nombre_medio_digital"), "peso": data.get("peso_medio_digital"), "id_categoria": data.get("id_categoria_observacion")})
     new_id = result.scalar()
     await db.commit()
-    return {"id_medio_digital": new_id}
+    return {"id_medio_digital": new_id, "success": True}
 
 @router.get("/influencers/categoria/{id_categoria}")
 async def listar_influencers(
@@ -208,13 +208,13 @@ async def crear_influencer(
     db: AsyncSession = Depends(get_db_session)
 ):
     result = await db.execute(text("""
-        INSERT INTO sds.influencers (id_influencer, nombre_influencer, peso_influencer, id_categoria_observacion)
-        VALUES (nextval('sds.influencers_id_influencer_seq'), :nombre, :peso, :id_categoria)
+        INSERT INTO sds.influencers (nombre_influencer, peso_influencer, id_categoria_observacion)
+        VALUES (:nombre, :peso, :id_categoria)
         RETURNING id_influencer
     """), {"nombre": data.get("nombre_influencer"), "peso": data.get("peso_influencer"), "id_categoria": data.get("id_categoria_observacion")})
     new_id = result.scalar()
     await db.commit()
-    return {"id_influencer": new_id}
+    return {"id_influencer": new_id, "success": True}
 
 @router.get("/entidades/categoria/{id_categoria}")
 async def listar_entidades(
@@ -270,10 +270,10 @@ async def crear_entidad(
     db: AsyncSession = Depends(get_db_session)
 ):
     result = await db.execute(text("""
-        INSERT INTO sds.entidades (id_entidades, nombre_entidad, peso_entidad, id_categoria_observacion)
-        VALUES (nextval('sds.entidades_id_entidades_seq'), :nombre, :peso, :id_categoria)
+        INSERT INTO sds.entidades (nombre_entidad, peso_entidad, id_categoria_observacion)
+        VALUES (:nombre, :peso, :id_categoria)
         RETURNING id_entidades
     """), {"nombre": data.get("nombre_entidad"), "peso": data.get("peso_entidad"), "id_categoria": data.get("id_categoria_observacion")})
     new_id = result.scalar()
     await db.commit()
-    return {"id_entidad": new_id}
+    return {"id_entidad": new_id, "success": True}
