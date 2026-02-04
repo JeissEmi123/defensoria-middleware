@@ -1,58 +1,12 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-ENV/
-.venv
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Environment Variables - CRÍTICO
-.env
-.env.local
-.env.production
-.env.prod
-.env.*.local
-!.env.example
-!.env.docker
-
-# Database
-*.db
-*.sqlite
-*.sql
-
-# Logs
-*.log
-logs/
-
-# Testing
-.pytest_cache/
-.coverage
-htmlcov/
-.tox/
-
-# Build
-dist/
-build/
-*.egg-info/
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Google Cloud Credentials - CRÍTICO NO SUBIR
-config/service-account-key.json
-config/oauth-client-secret.json
+# Secrets y configuración sensible
+config/client_secret.json
+config/gmail_token.json
 config/gmail-token.pickle
-*.json.backup
-credentials/
-token.json
+config/oauth-client-secret.json
+config/service-account-key.json
+github-actions-key.json
+*.pem
+*.key
+.env
+.env.*
+!.env.example
