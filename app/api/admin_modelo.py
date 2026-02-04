@@ -192,7 +192,8 @@ async def crear_conducta(
         nombre_conducta=data.get("nombre_conducta_vulneratoria"),
         descripcion_conducta=data.get("definicion_conducta_vulneratoria"),
         peso_conducta=data.get("peso_conducta_vulneratoria", 0),
-        id_categoria_analisis_senal=id_categoria
+        id_categoria_analisis_senal=id_categoria,
+        activo=True
     )
     db.add(nueva)
     await db.commit()
@@ -254,7 +255,8 @@ async def crear_palabra(
         id_palabra_clave=nuevo_id,
         palabra_clave=data.get("nombre_palabra_clave"),
         contexto=data.get("contexto"),
-        id_categoria_analisis_senal=id_categoria
+        id_categoria_analisis_senal=id_categoria,
+        activo=True
     )
     db.add(nueva)
     await db.commit()
@@ -314,7 +316,8 @@ async def crear_emoticon(
         id_emoticon=nuevo_id,
         codigo_emoticon=data.get("tipo_emoticon"),
         descripcion_emoticon=data.get("descripcion_emoticon"),
-        id_categoria_analisis_senal=id_categoria
+        id_categoria_analisis_senal=id_categoria,
+        activo=True
     )
     db.add(nuevo)
     await db.commit()
@@ -374,7 +377,8 @@ async def crear_frase(
         id_frase_clave=nuevo_id,
         frase=data.get("nombre_frase_clave"),
         contexto=data.get("contexto"),
-        id_categoria_analisis_senal=id_categoria
+        id_categoria_analisis_senal=id_categoria,
+        activo=True
     )
     db.add(nueva)
     await db.commit()
