@@ -1,0 +1,50 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+env:
+  PROJECT_ID: sat-defensoriapueblo
+  SERVICE_NAME: defensoria-middleware-prod
+  REGION: us-central1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker
+
+      - name: Submit to Cloud Build
+        run: |
+          gcloud builds submit \
+            --config=cloudbuild-deploy.yaml \
+            --project=$PROJECT_ID
+
+      - name: Verify deployment
+        run: |
+          URL=$(gcloud run services describe $SERVICE_NAME \
+            --region=$REGION \
+            --format='value(status.url)')
+          echo "Service URL: $URL"
+          curl -f "$URL/health" || exit 1
