@@ -24,7 +24,7 @@ async def listar_categorias(
     db: AsyncSession = Depends(get_db_session),
     current_user: Usuario = Depends(get_current_user)
 ):
-    """Listar todas las categorías de observación"""
+    """Listar todas las categorías de observacion"""
     query = select(CategoriaObservacion).order_by(CategoriaObservacion.nivel, CategoriaObservacion.codigo_categoria_observacion)
     
     if nivel:

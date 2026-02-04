@@ -12,7 +12,7 @@ REGION="us-central1"
 gcloud config set project $PROJECT_ID
 
 # Desplegar
-echo " Construyendo y desplegando..."
+echo " Construyendo y desplegando..."    
 gcloud builds submit --config=cloudbuild-deploy.yaml
 
 # Obtener URL
@@ -28,4 +28,4 @@ sleep 5
 curl -s "$URL/health" | jq .
 
 echo ""
-echo " Todo listo!"
+echo "✅ Todo listo!"
