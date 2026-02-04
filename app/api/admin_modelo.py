@@ -62,45 +62,20 @@ async def obtener_categoria_analisis(
     if not cat_row:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
     
-    # Obtener conductas
-    conductas_result = await db.execute(text("""
-        SELECT id_conducta_vulneratorias, nombre_conducta, descripcion_conducta, peso_conducta
-        FROM sds.conducta_vulneratoria
-        WHERE id_categoria_analisis_senal = :id
-        ORDER BY nombre_conducta
-    """), {"id": id_categoria})
+    conductas = []
+    palabras = []
+    emoticones = []
+    frases = []
     
-    # Obtener palabras
-    palabras_result = await db.execute(text("""
-        SELECT id_palabra_clave, palabra_clave, contexto
-        FROM sds.palabra_clave
-        WHERE id_categoria_analisis_senal = :id
-        ORDER BY palabra_clave
-    """), {"id": id_categoria})
-    
-    # Obtener emoticones
-    emoticones_result = await db.execute(text("""
-        SELECT id_emoticon, codigo_emoticon, descripcion_emoticon
-        FROM sds.emoticon
-        WHERE id_categoria_analisis_senal = :id
-        ORDER BY codigo_emoticon
-    """), {"id": id_categoria})
-    
-    # Obtener frases
-    frases_result = await db.execute(text("""
-        SELECT id_frase_clave, frase, contexto
-        FROM sds.frase_clave
-        WHERE id_categoria_analisis_senal = :id
-        ORDER BY frase
-    """), {"id": id_categoria})
-    
-    return {
-        "categoria": {
-            "id_categoria_analisis_senal": cat_row[0],
-            "nombre_categoria_analisis": cat_row[1],
-            "descripcion_categoria_analisis": cat_row[2]
-        },
-        "conductas": [
+    try:
+        # Obtener conductas
+        conductas_result = await db.execute(text("""
+            SELECT id_conducta_vulneratorias, nombre_conducta, descripcion_conducta, peso_conducta
+            FROM sds.conducta_vulneratoria
+            WHERE id_categoria_analisis_senal = :id
+            ORDER BY nombre_conducta
+        """), {"id": id_categoria})
+        conductas = [
             {
                 "id_conducta_vulneratoria": row[0],
                 "nombre_conducta": row[1],
@@ -108,24 +83,57 @@ async def obtener_categoria_analisis(
                 "peso_conducta": float(row[3]) if row[3] else 0
             }
             for row in conductas_result.fetchall()
-        ],
-        "palabras_clave": [
+        ]
+    except:
+        pass
+    
+    try:
+        # Obtener palabras
+        palabras_result = await db.execute(text("""
+            SELECT id_palabra_clave, palabra_clave, contexto
+            FROM sds.palabra_clave
+            WHERE id_categoria_analisis_senal = :id
+            ORDER BY palabra_clave
+        """), {"id": id_categoria})
+        palabras = [
             {
                 "id_palabra_clave": row[0],
                 "palabra_clave": row[1],
                 "contexto": row[2]
             }
             for row in palabras_result.fetchall()
-        ],
-        "emoticones": [
+        ]
+    except:
+        pass
+    
+    try:
+        # Obtener emoticones
+        emoticones_result = await db.execute(text("""
+            SELECT id_emoticon, codigo_emoticon, descripcion_emoticon
+            FROM sds.emoticon
+            WHERE id_categoria_analisis_senal = :id
+            ORDER BY codigo_emoticon
+        """), {"id": id_categoria})
+        emoticones = [
             {
                 "id_emoticon": row[0],
                 "codigo_emoticon": row[1],
                 "descripcion_emoticon": row[2]
             }
             for row in emoticones_result.fetchall()
-        ],
-        "frases_clave": [
+        ]
+    except:
+        pass
+    
+    try:
+        # Obtener frases
+        frases_result = await db.execute(text("""
+            SELECT id_frase_clave, frase, contexto
+            FROM sds.frase_clave
+            WHERE id_categoria_analisis_senal = :id
+            ORDER BY frase
+        """), {"id": id_categoria})
+        frases = [
             {
                 "id_frase_clave": row[0],
                 "frase": row[1],
@@ -133,6 +141,19 @@ async def obtener_categoria_analisis(
             }
             for row in frases_result.fetchall()
         ]
+    except:
+        pass
+    
+    return {
+        "categoria": {
+            "id_categoria_analisis_senal": cat_row[0],
+            "nombre_categoria_analisis": cat_row[1],
+            "descripcion_categoria_analisis": cat_row[2]
+        },
+        "conductas": conductas,
+        "palabras_clave": palabras,
+        "emoticones": emoticones,
+        "frases_clave": frases
     }
 
 @router.put("/categorias-analisis/{id_categoria}")
