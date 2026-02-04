@@ -3,7 +3,7 @@ Endpoint CRUD Consolidado para Parámetros SDS
 """
 from typing import Any, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status, Path
+from fastapi import APIRouter, Depends, HTTPException, Query, status, Path, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.dependencies import get_current_user
@@ -14,6 +14,189 @@ from pydantic import BaseModel
 
 
 router = APIRouter(prefix="/api/v2/parametros", tags=["Parámetros SDS Consolidado"])
+
+# Alias para compatibilidad con frontend
+@router.get("/crud/categorias-senal")
+async def listar_categorias_senal_crud(
+    db: AsyncSession = Depends(get_db_session),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """Alias para listar categorías de señal (compatibilidad)"""
+    from app.services.senal_service_v2 import SenalServiceV2
+    service = SenalServiceV2(db)
+    categorias = await service.listar_categorias_senal()
+    return [
+        {
+            "id_categoria_senales": categoria.id_categoria_senales,
+            "id_parent_categoria_senales": categoria.id_parent_categoria_senales,
+            "nombre_categoria_senal": categoria.nombre_categoria_senal,
+            "descripcion_categoria_senal": categoria.descripcion_categoria_senal,
+            "color": categoria.color,
+            "nivel": categoria.nivel,
+            "umbral_bajo": categoria.umbral_bajo,
+            "umbral_alto": categoria.umbral_alto,
+        }
+        for categoria in categorias
+    ]
+
+@router.post("/crud/categorias-senal", status_code=201)
+async def crear_categoria_senal(
+    payload: dict = Body(...),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Crear categoría de señal (sin autenticación para debug)"""
+    from sqlalchemy import text
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    try:
+        logger.info(f"Creando categoría con payload: {payload}")
+        
+        # Obtener el siguiente ID
+        max_id_result = await db.execute(
+            text("SELECT COALESCE(MAX(id_categoria_senales), 0) + 1 FROM sds.categoria_senal")
+        )
+        next_id = max_id_result.scalar()
+        
+        result = await db.execute(
+            text("""
+                INSERT INTO sds.categoria_senal (
+                    id_categoria_senales, id_parent_categoria_senales, nombre_categoria_senal, 
+                    descripcion_categoria_senal, color, nivel, umbral_bajo, umbral_alto,
+                    fecha_actualizacion
+                ) VALUES (:id, :parent, :nombre, :desc, :color, :nivel, :bajo, :alto, NOW())
+                RETURNING id_categoria_senales
+            """),
+            {
+                "id": next_id,
+                "parent": payload.get("id_parent_categoria_senales", 0),
+                "nombre": payload.get("nombre_categoria_senal", ""),
+                "desc": payload.get("descripcion_categoria_senal"),
+                "color": payload.get("color", "#CCCCCC"),
+                "nivel": payload.get("nivel", 1),
+                "bajo": payload.get("umbral_bajo", 0.0),
+                "alto": payload.get("umbral_alto", 100.0)
+            }
+        )
+        await db.commit()
+        id_creado = result.scalar()
+        logger.info(f"Categoría creada con ID: {id_creado}")
+        return {"id_categoria_senales": id_creado}
+    except Exception as e:
+        logger.error(f"Error creando categoría: {str(e)}", exc_info=True)
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+
+@router.put("/crud/categorias-senal/{id_categoria}")
+async def actualizar_categoria_senal(
+    id_categoria: int,
+    payload: dict = Body(...),
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Actualizar categoría de señal"""
+    from sqlalchemy import text
+    try:
+        updates = []
+        params = {"id": id_categoria}
+        
+        if "nombre_categoria_senal" in payload:
+            updates.append("nombre_categoria_senal = :nombre")
+            params["nombre"] = payload["nombre_categoria_senal"]
+        if "descripcion_categoria_senal" in payload:
+            updates.append("descripcion_categoria_senal = :desc")
+            params["desc"] = payload["descripcion_categoria_senal"]
+        if "color" in payload:
+            updates.append("color = :color")
+            params["color"] = payload["color"]
+        if "nivel" in payload:
+            updates.append("nivel = :nivel")
+            params["nivel"] = payload["nivel"]
+        if "umbral_bajo" in payload:
+            updates.append("umbral_bajo = :bajo")
+            params["bajo"] = payload["umbral_bajo"]
+        if "umbral_alto" in payload:
+            updates.append("umbral_alto = :alto")
+            params["alto"] = payload["umbral_alto"]
+        
+        if not updates:
+            raise HTTPException(status_code=400, detail="No hay campos para actualizar")
+        
+        result = await db.execute(
+            text(f"""
+                UPDATE sds.categoria_senal
+                SET {', '.join(updates)}
+                WHERE id_categoria_senales = :id
+                RETURNING id_categoria_senales
+            """),
+            params
+        )
+        await db.commit()
+        
+        if not result.scalar():
+            raise HTTPException(status_code=404, detail="Categoría no encontrada")
+        
+        return {"id_categoria_senales": id_categoria}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/crud/categorias-senal/{id_categoria}", status_code=204)
+async def eliminar_categoria_senal(
+    id_categoria: int,
+    db: AsyncSession = Depends(get_db_session)
+):
+    """Eliminar categoría de señal"""
+    from sqlalchemy import text
+    try:
+        result = await db.execute(
+            text("DELETE FROM sds.categoria_senal WHERE id_categoria_senales = :id RETURNING id_categoria_senales"),
+            {"id": id_categoria}
+        )
+        await db.commit()
+        
+        if not result.scalar():
+            raise HTTPException(status_code=404, detail="Categoría no encontrada")
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/crud/categorias-senal/arbol")
+async def obtener_arbol_categorias_senal(
+    db: AsyncSession = Depends(get_db_session),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """Obtener árbol jerárquico de categorías de señal"""
+    from app.services.senal_service_v2 import SenalServiceV2
+    service = SenalServiceV2(db)
+    categorias = await service.listar_categorias_senal()
+    
+    # Construir árbol
+    categorias_dict = {cat.id_categoria_senales: {
+        "id_categoria_senales": cat.id_categoria_senales,
+        "id_parent_categoria_senales": cat.id_parent_categoria_senales,
+        "nombre_categoria_senal": cat.nombre_categoria_senal,
+        "descripcion_categoria_senal": cat.descripcion_categoria_senal,
+        "color": cat.color,
+        "nivel": cat.nivel,
+        "umbral_bajo": cat.umbral_bajo,
+        "umbral_alto": cat.umbral_alto,
+        "hijos": []
+    } for cat in categorias}
+    
+    raices = []
+    for cat in categorias:
+        if cat.id_parent_categoria_senales == 0:
+            raices.append(categorias_dict[cat.id_categoria_senales])
+        elif cat.id_parent_categoria_senales in categorias_dict:
+            categorias_dict[cat.id_parent_categoria_senales]["hijos"].append(
+                categorias_dict[cat.id_categoria_senales]
+            )
+    
+    return raices
 
 
 @router.get("/tipos")

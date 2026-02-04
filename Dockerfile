@@ -25,4 +25,6 @@ COPY . .
 EXPOSE 8080
 
 # Comando por defecto - usa PORT de variable de entorno o 8080 por defecto
-CMD ["sh", "-c", "if [ -f /app/config-bundle.tar.gz ]; then mkdir -p /tmp/config && tar -xzf /app/config-bundle.tar.gz -C /tmp/config; fi; export PYTHONPATH=/app; exec uvicorn app.main:app --app-dir /app --host 0.0.0.0 --port ${PORT:-8080}"]
+ENV PYTHONPATH=/app
+WORKDIR /app
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--app-dir", "/app"]

@@ -4,7 +4,7 @@ Rutas: /api/v2/senales
 """
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
+from typing import Optional, List
 
 from app.database.session import get_db_session
 from app.services.senal_service_v2 import SenalServiceV2
@@ -19,7 +19,8 @@ from app.schemas.senales_v2 import (
     CategoriaAnalisisSenalBase,
     CategoriaSenalBase,
     CategoriaSenalUpdate,
-    SenalDetectadaUpdate
+    SenalDetectadaUpdate,
+    HistorialSenalItem
 )
 from app.core.dependencies import get_current_user
 from app.database.models import Usuario
@@ -149,6 +150,7 @@ async def _build_home_dashboard_payload(db: AsyncSession) -> HomeResponse:
 async def consultar_senales(
     id_senal_detectada: Optional[str] = Query(None, description="IDs de señales separados por coma: 1,2,3"),
     categoria: Optional[str] = Query(None, description="IDs de categorías separados por coma: 2,3"),
+    estado: Optional[str] = Query(None, description="Estado de la señal"),
     fecha_desde: Optional[str] = Query(None, description="Fecha desde YYYY-MM-DD"),
     fecha_hasta: Optional[str] = Query(None, description="Fecha hasta YYYY-MM-DD"),
     puntuacion_min: Optional[float] = Query(None, ge=0, le=100, description="Puntuación mínima"),
@@ -159,11 +161,12 @@ async def consultar_senales(
     current_user: Usuario = Depends(get_current_user)
 ):
     """Consulta avanzada de señales con filtros multidimensionales"""
-    return await listar_senales_original(id_senal_detectada, categoria, fecha_desde, fecha_hasta, puntuacion_min, puntuacion_max, limite, desplazamiento, db, current_user)
+    return await listar_senales_original(id_senal_detectada, categoria, estado, fecha_desde, fecha_hasta, puntuacion_min, puntuacion_max, limite, desplazamiento, db, current_user)
 
 async def listar_senales_original(
     id_senal_detectada: Optional[str],
     categoria: Optional[str],
+    estado: Optional[str],
     fecha_desde: Optional[str],
     fecha_hasta: Optional[str],
     score_min: Optional[float],
@@ -183,6 +186,7 @@ async def listar_senales_original(
         return await service.consultar_senales(
             id_senal_detectada=id_senal_detectada,
             categoria=categoria,
+            estado=estado,
             fecha_desde=fecha_desde,
             fecha_hasta=fecha_hasta,
             score_min=score_min,
@@ -217,7 +221,7 @@ async def obtener_tendencias(
 
 # ==================== HU-DF003: DETALLE DE SEÑAL ====================
 
-@router.get("/{id_senal}")
+@router.get("/{id_senal:int}")
 async def obtener_detalle_senal(
     id_senal: int,
     db: AsyncSession = Depends(get_db_session),
@@ -244,7 +248,7 @@ async def obtener_detalle_senal(
             detail=f"Error al obtener detalle: {str(e)}"
         )
 
-@router.get("/{id_senal}/resumen")
+@router.get("/{id_senal:int}/resumen")
 async def obtener_resumen_senal(
     id_senal: int,
     db: AsyncSession = Depends(get_db_session),
@@ -262,7 +266,7 @@ async def obtener_resumen_senal(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error al obtener resumen: {str(e)}")
 
-@router.patch("/{id_senal}")
+@router.patch("/{id_senal:int}")
 async def actualizar_senal(
     id_senal: int,
     payload: SenalDetectadaUpdate,
@@ -279,10 +283,11 @@ async def actualizar_senal(
         and payload.id_categoria_analisis_senal is None
         and payload.score_riesgo is None
         and payload.fecha_deteccion is None
+        and payload.estado is None
     ):
         raise HTTPException(
             status_code=400,
-            detail="Debe enviar al menos un campo: id_categoria_senal, id_categoria_analisis_senal, score_riesgo o fecha_deteccion"
+            detail="Debe enviar al menos un campo: id_categoria_senal, id_categoria_analisis_senal, score_riesgo, fecha_deteccion o estado"
         )
 
     if payload.id_categoria_senal is not None and payload.confirmo_revision is not True:
@@ -313,7 +318,7 @@ async def actualizar_senal(
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Error al actualizar señal: {str(e)}")
 
-@router.get("/{id_senal}/analisis-completo")
+@router.get("/{id_senal:int}/analisis-completo")
 async def analisis_completo_senal(
     id_senal: int,
     db: AsyncSession = Depends(get_db_session),
@@ -371,6 +376,52 @@ async def listar_categorias_analisis(
         ]
     except Exception as e:
         return {"status": "error", "detail": str(e)}
+
+@router.get("/catalogos/categorias-senal")
+async def listar_categorias_senal(
+    db: AsyncSession = Depends(get_db_session),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """Listar tipos de señal (Ruido, Paracrisis, Crisis)"""
+    try:
+        service = SenalServiceV2(db)
+        categorias = await service.listar_categorias_senal()
+        return [
+            {
+                "id_categoria_senales": categoria.id_categoria_senales,
+                "nombre_categoria_senal": categoria.nombre_categoria_senal,
+                "descripcion_categoria_senal": categoria.descripcion_categoria_senal,
+                "color_categoria": categoria.color,
+                "nivel": categoria.nivel,
+            }
+            for categoria in categorias
+        ]
+    except Exception as e:
+        import traceback
+        return {"status": "error", "detail": str(e), "trace": traceback.format_exc()}
+
+@router.get("/historial", response_model=List[HistorialSenalItem])
+async def listar_historial(
+    id_senal: Optional[int] = Query(None),
+    usuario_id: Optional[int] = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=1000),
+    db: AsyncSession = Depends(get_db_session),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """Listar historial de señales"""
+    try:
+        service = SenalServiceV2(db)
+        historial = await service.listar_historial_senal(
+            usuario_id=usuario_id,
+            id_senal=id_senal,
+            skip=skip,
+            limit=limit
+        )
+        return historial
+    except Exception as e:
+        import traceback
+        return {"status": "error", "detail": str(e), "trace": traceback.format_exc()}
 
 @router.get("/catalogos/categorias-senal")
 async def listar_categorias_senal(

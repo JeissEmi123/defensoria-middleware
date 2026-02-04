@@ -335,8 +335,12 @@ class SenalServiceV2:
         """Listar categorías de señal"""
         query = (
             select(CategoriaSenal)
-            .where(CategoriaSenal.id_categoria_senales.in_([1, 2, 3]))
-            .order_by(CategoriaSenal.nivel, CategoriaSenal.nombre_categoria_senal)
+            .where(CategoriaSenal.id_parent_categoria_senales != 0)
+            .order_by(
+                CategoriaSenal.id_parent_categoria_senales,
+                CategoriaSenal.nivel,
+                CategoriaSenal.nombre_categoria_senal
+            )
         )
         result = await self.db.execute(query)
         return result.scalars().all()
@@ -890,29 +894,53 @@ class SenalServiceV2:
 
         audit_row = None
         if parts["has_historial"]:
-            audit_result = await self.db.execute(
-                text("""
-                    INSERT INTO sds.historial_senal (
-                        id_senal_detectada, usuario_id, accion, descripcion,
-                        estado_anterior, estado_nuevo, datos_adicionales, fecha_registro, ip_address
-                    ) VALUES (
-                        :id_senal, :usuario_id, :accion, :descripcion,
-                        :estado_anterior, :estado_nuevo, :datos_adicionales, NOW(), :ip_address
-                    )
-                    RETURNING id, fecha_registro
-                """),
-                {
-                    "id_senal": id_senal,
-                    "usuario_id": usuario_id,
-                    "accion": "Actualizacion_estado_señal",
-                    "descripcion": descripcion_evento,
-                    "estado_anterior": estado_antes,
-                    "estado_nuevo": estado_despues,
-                    "datos_adicionales": safe_json_dumps(datos_adicionales),
-                    "ip_address": ip_address
-                }
+            cambios_reales = (
+                antes[0] != row[1]
+                or antes[1] != row[2]
+                or antes[2] != row[3]
+                or antes[3] != row[4]
+                or estado_antes != estado_despues
             )
-            audit_row = audit_result.fetchone()
+            skip_historial = not cambios_reales and not descripcion_cambio
+            if not skip_historial:
+                last_event = await self.db.execute(
+                    text("""
+                        SELECT accion, descripcion, usuario_id
+                        FROM sds.historial_senal
+                        WHERE id_senal_detectada = :id_senal
+                          AND fecha_registro >= NOW() - INTERVAL '5 seconds'
+                        ORDER BY fecha_registro DESC
+                        LIMIT 1
+                    """),
+                    {"id_senal": id_senal}
+                )
+                last_row = last_event.fetchone()
+                if last_row and last_row[0] == "Actualizacion_estado_señal" and last_row[1] == descripcion_evento and last_row[2] == usuario_id:
+                    skip_historial = True
+            if not skip_historial:
+                audit_result = await self.db.execute(
+                    text("""
+                        INSERT INTO sds.historial_senal (
+                            id_senal_detectada, usuario_id, accion, descripcion,
+                            estado_anterior, estado_nuevo, datos_adicionales, fecha_registro, ip_address
+                        ) VALUES (
+                            :id_senal, :usuario_id, :accion, :descripcion,
+                            :estado_anterior, :estado_nuevo, :datos_adicionales, NOW(), :ip_address
+                        )
+                        RETURNING id, fecha_registro
+                    """),
+                    {
+                        "id_senal": id_senal,
+                        "usuario_id": usuario_id,
+                        "accion": "Actualizacion_estado_señal",
+                        "descripcion": descripcion_evento,
+                        "estado_anterior": str(estado_antes) if estado_antes is not None else None,
+                        "estado_nuevo": str(estado_despues) if estado_despues is not None else None,
+                        "datos_adicionales": safe_json_dumps(datos_adicionales),
+                        "ip_address": ip_address
+                    }
+                )
+                audit_row = audit_result.fetchone()
 
         await self.db.commit()
 

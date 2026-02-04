@@ -1,0 +1,63 @@
+substitutions:
+  _SERVICE: defensoria-middleware-prod
+  _REGION: us-central1
+  _CONFIG_BUNDLE_SECRET: defensoria-config-bundle
+
+steps:
+  # Build image
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --no-cache
+      - -t
+      - "gcr.io/$PROJECT_ID/defensoria-middleware:${COMMIT_SHA}"
+      - -t
+      - "gcr.io/$PROJECT_ID/defensoria-middleware:latest"
+      - .
+
+  # Push image
+  - name: gcr.io/cloud-builders/docker
+    args: [push, "gcr.io/$PROJECT_ID/defensoria-middleware:${COMMIT_SHA}"]
+  - name: gcr.io/cloud-builders/docker
+    args: [push, "gcr.io/$PROJECT_ID/defensoria-middleware:latest"]
+
+  # Deploy to Cloud Run
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image
+      - "gcr.io/$PROJECT_ID/defensoria-middleware:${COMMIT_SHA}"
+      - --region
+      - ${_REGION}
+      - --platform
+      - managed
+      - --allow-unauthenticated
+      - --execution-environment
+      - gen2
+      - --cpu
+      - "1"
+      - --memory
+      - 2Gi
+      - --timeout
+      - "3600"
+      - --concurrency
+      - "80"
+      - --min-instances
+      - "1"
+      - --max-instances
+      - "10"
+      - --add-cloudsql-instances
+      - $PROJECT_ID:us-central1:defensoria-db
+      - --set-env-vars
+      - ^,^APP_ENV=production,DATABASE_URL=postgresql+asyncpg://app_user:AppUser2026!@/defensoria_db?host=/cloudsql/$PROJECT_ID:us-central1:defensoria-db,POSTGRES_USER=app_user,POSTGRES_PASSWORD=AppUser2026!,POSTGRES_DB=defensoria_db,POSTGRES_PORT=5432,EMAIL_SERVICE=none,EMAIL_FROM=jcamargom@agatadata.com,COORDINADOR_EMAIL=jcamargom@agatadata.com,GCP_PROJECT_ID=$PROJECT_ID,GMAIL_USE_OAUTH=false,LOG_LEVEL=INFO,DEBUG=false
+      - --update-secrets
+      - /app/config-bundle.tar.gz=${_CONFIG_BUNDLE_SECRET}:latest
+
+images:
+  - "gcr.io/$PROJECT_ID/defensoria-middleware:${COMMIT_SHA}"
+
+options:
+  logging: CLOUD_LOGGING_ONLY

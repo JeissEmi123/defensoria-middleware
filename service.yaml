@@ -1,0 +1,51 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: defensoria-middleware-prod
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/cloudsql-instances: sat-defensoriapueblo:us-central1:defensoria-db
+        run.googleapis.com/startup-cpu-boost: 'true'
+    spec:
+      containerConcurrency: 80
+      timeoutSeconds: 900
+      containers:
+      - image: gcr.io/sat-defensoriapueblo/defensoria-middleware:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: APP_ENV
+          value: production
+        - name: EMAIL_SERVICE
+          value: none
+        - name: SECRET_KEY
+          value: prod-secret-2026
+        - name: JWT_SECRET_KEY
+          value: jwt-prod-2026
+        - name: JWT_REFRESH_SECRET_KEY
+          value: jwt-refresh-prod-2026
+        - name: ADMIN_DEFAULT_PASSWORD
+          value: Admin2026!
+        - name: POSTGRES_USER
+          value: app_user
+        - name: POSTGRES_PASSWORD
+          value: AppUser2026!
+        - name: POSTGRES_DB
+          value: defensoria_db
+        - name: POSTGRES_PORT
+          value: "5432"
+        - name: DATABASE_URL
+          value: postgresql+asyncpg://app_user:AppUser2026!@/defensoria_db?host=/cloudsql/sat-defensoriapueblo:us-central1:defensoria-db
+        resources:
+          limits:
+            cpu: '2'
+            memory: 4Gi
+        startupProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 0
+          timeoutSeconds: 5
+          periodSeconds: 10
+          failureThreshold: 24

@@ -36,6 +36,8 @@ class SenalDetectadaUpdate(BaseModel):
     id_categoria_analisis_senal: Optional[int] = None
     score_riesgo: Optional[Decimal] = Field(default=None, ge=0, le=100)
     fecha_deteccion: Optional[datetime] = None
+    estado: Optional[str] = None
+    descripcion_cambio: Optional[str] = None
     confirmo_revision: Optional[bool] = Field(default=None, description="El revisor confirma haber validado el cambio de tipo de señal")
     email_revisor: Optional[str] = Field(default=None, description="Email del usuario que está modificando la señal para recibir notificaciones")
 
@@ -114,3 +116,19 @@ class HomeResponse(BaseModel):
     total_senales_hoy: int
     total_crisis: int
     total_paracrisis: int
+
+class HistorialSenalItem(BaseModel):
+    """Schema para items del historial de señales"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    id: int
+    id_senal_detectada: int
+    usuario_id: Optional[int] = None
+    usuario_nombre: Optional[str] = None
+    accion: str
+    descripcion: Optional[str] = None
+    estado_anterior: Optional[str] = None
+    estado_nuevo: Optional[str] = None
+    datos_adicionales: Optional[dict] = None
+    fecha_registro: datetime
+    ip_address: Optional[str] = None

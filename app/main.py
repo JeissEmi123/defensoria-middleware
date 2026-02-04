@@ -9,6 +9,7 @@ except ImportError:
     DEFAULT_RESPONSE_CLASS = JSONResponse
 from app.config import get_settings
 from app.api import auth, rbac, usuarios, password_reset, senales_v2, categoria_observacion, parametros_sds, parametros_consolidado
+from app.api import admin_modelo, crud_unificado
 from app.api.detalle_completo import router as detalle_router
 from app.core.exceptions import DefensoriaException
 from app.core.handlers import register_exception_handlers
@@ -143,8 +144,10 @@ app.include_router(password_reset.router, prefix="/password", tags=["Recuperaci�
 app.include_router(senales_v2.router, prefix="/api/v2/senales", tags=["Señales v2"])
 app.include_router(detalle_router, prefix="/api/v2/senales", tags=["Detalle Completo"])
 app.include_router(categoria_observacion.router, prefix="/api/v2/categorias-observacion", tags=["Categorías Observación"])
-app.include_router(parametros_sds.router)  # MANTENER POR COMPATIBILIDAD
-app.include_router(parametros_consolidado.router)  # NUEVO CRUD CONSOLIDADO
+app.include_router(parametros_sds.router)
+app.include_router(parametros_consolidado.router)
+app.include_router(admin_modelo.router)
+app.include_router(crud_unificado.router)
 
 @app.get('/')
 async def root():

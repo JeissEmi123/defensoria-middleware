@@ -88,8 +88,9 @@ async def crear_figura_publica(
         VALUES (:nombre, :peso, :id_categoria)
         RETURNING id_figura_publica
     """), {"nombre": data.get("nombre_actor"), "peso": data.get("peso_actor"), "id_categoria": data.get("id_categoria_observacion")})
+    new_id = result.scalar()
     await db.commit()
-    return {"id_figura_publica": result.scalar()}
+    return {"id_figura_publica": new_id}
 
 @router.get("/medios-digitales/categoria/{id_categoria}")
 async def listar_medios_digitales(
@@ -149,8 +150,9 @@ async def crear_medio_digital(
         VALUES (:nombre, :peso, :id_categoria)
         RETURNING id_medio_digital
     """), {"nombre": data.get("nombre_medio_digital"), "peso": data.get("peso_medio_digital"), "id_categoria": data.get("id_categoria_observacion")})
+    new_id = result.scalar()
     await db.commit()
-    return {"id_medio_digital": result.scalar()}
+    return {"id_medio_digital": new_id}
 
 @router.get("/influencers/categoria/{id_categoria}")
 async def listar_influencers(
@@ -210,8 +212,9 @@ async def crear_influencer(
         VALUES (:nombre, :peso, :id_categoria)
         RETURNING id_influencer
     """), {"nombre": data.get("nombre_influencer"), "peso": data.get("peso_influencer"), "id_categoria": data.get("id_categoria_observacion")})
+    new_id = result.scalar()
     await db.commit()
-    return {"id_influencer": result.scalar()}
+    return {"id_influencer": new_id}
 
 @router.get("/entidades/categoria/{id_categoria}")
 async def listar_entidades(
@@ -271,5 +274,6 @@ async def crear_entidad(
         VALUES (:nombre, :peso, :id_categoria)
         RETURNING id_entidades
     """), {"nombre": data.get("nombre_entidad"), "peso": data.get("peso_entidad"), "id_categoria": data.get("id_categoria_observacion")})
+    new_id = result.scalar()
     await db.commit()
-    return {"id_entidad": result.scalar()}
+    return {"id_entidad": new_id}
