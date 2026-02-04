@@ -1,0 +1,6 @@
+{
+  "terminal.integrated.env.windows": {
+    "PATH": "${env:PATH};C:\\Users\\jeiss\\AppData\\Local\\Google\\Cloud SDK\\google-cloud-sdk\\bin"
+  },
+  "terminal.integrated.defaultProfile.windows": "PowerShell"
+}

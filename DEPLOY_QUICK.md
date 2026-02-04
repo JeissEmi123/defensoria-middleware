@@ -1,4 +1,4 @@
-# 🚀 Guía Rápida de Despliegue
+#  Guía Rápida de Despliegue
 
 ## Opción 1: GitHub Actions (Recomendado)
 
@@ -12,7 +12,7 @@
 # 4. Nombre: GCP_SA_KEY
 # 5. Pegar el JSON copiado
 # 6. Eliminar el archivo local
-rm github-actions-key.json
+rm github-actions-key.json.  
 ```
 
 ### Desplegar

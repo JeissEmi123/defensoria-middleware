@@ -65,9 +65,9 @@ git push origin main
 ## Verificación
 
 Después del despliegue, verifica:
-- ✅ Build exitoso en Cloud Build
-- ✅ Servicio actualizado en Cloud Run
-- ✅ Health check respondiendo correctamente
+-  Build exitoso en Cloud Build
+-  Servicio actualizado en Cloud Run
+-  Health check respondiendo correctamente
 
 ## Troubleshooting
 

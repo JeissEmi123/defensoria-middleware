@@ -1,6 +1,6 @@
-# 🔧 Correcciones Aplicadas - Despliegue Backend
+#  Correcciones Aplicadas - Despliegue Backend
 
-## ✅ Problemas Resueltos
+##  Problemas Resueltos
 
 ### 1. CORS (Cross-Origin Resource Sharing)
 **Problema:** Frontend bloqueado por política CORS
@@ -28,7 +28,7 @@ GET ... net::ERR_FAILED 429 (Too Many Requests)
 **Problema:** Secretos montados sobrescribían el código
 **Solución:** `--clear-secrets` en el despliegue
 
-## 📋 Configuración Final
+##  Configuración Final
 
 ### Variables de Entorno
 ```bash
@@ -64,7 +64,7 @@ Timeout: 900s
 CPU Boost: Habilitado
 ```
 
-## 🚀 Despliegue Rápido
+##  Despliegue Rápido
 
 ### Opción 1: Script Automático
 ```bash
@@ -86,7 +86,7 @@ URL=$(gcloud run services describe defensoria-middleware-prod --region=us-centra
 curl "$URL/health"
 ```
 
-## 📁 Archivos Clave
+##  Archivos Clave
 
 ### `cloudbuild-deploy.yaml`
 Configuración de Cloud Build con todas las correcciones aplicadas:
@@ -109,7 +109,7 @@ Imagen optimizada con:
 - Puerto 8080 expuesto
 - Uvicorn como servidor ASGI
 
-## 🔍 Verificación Post-Despliegue
+##  Verificación Post-Despliegue
 
 ```bash
 # URL del servicio
@@ -126,7 +126,7 @@ gcloud run services logs read defensoria-middleware-prod --region=us-central1
 gcloud run services describe defensoria-middleware-prod --region=us-central1
 ```
 
-## 🐛 Troubleshooting
+##  Troubleshooting
 
 ### Si persisten errores CORS:
 1. Verificar que `ALLOWED_ORIGINS=["*"]` esté configurado
@@ -142,7 +142,7 @@ gcloud run services describe defensoria-middleware-prod --region=us-central1
 2. Revisar variables de entorno
 3. Ver logs de inicio: `gcloud run services logs read defensoria-middleware-prod --region=us-central1 --limit=100`
 
-## 📊 Próximas Mejoras
+##  Próximas Mejoras
 
 1. **CORS específico**: Cambiar `["*"]` por dominios específicos en producción
 2. **Monitoreo**: Configurar alertas en Cloud Monitoring
@@ -150,9 +150,9 @@ gcloud run services describe defensoria-middleware-prod --region=us-central1
 4. **Dominio personalizado**: Configurar dominio propio
 5. **CI/CD**: Automatizar con triggers de GitHub
 
-## 🔐 Seguridad
+##  Seguridad
 
-⚠️ **IMPORTANTE**: En producción real:
+ **IMPORTANTE**: En producción real:
 - Cambiar `ALLOWED_ORIGINS=["*"]` por dominios específicos
 - Rotar secretos y passwords
 - Configurar autenticación en Cloud Run

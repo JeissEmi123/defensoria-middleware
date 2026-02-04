@@ -1,0 +1,35 @@
+Creating temporary archive of 2885 file(s) totalling 51.0 MiB before compression.
+Uploading tarball of [.] to [gs://sat-defensoriapueblo_cloudbuild/source/1770097652.249308-b3cbf7785a7b40c4922b0bac60760b5f.tgz]
+Created [https://cloudbuild.googleapis.com/v1/projects/sat-defensoriapueblo/locations/global/builds/9a8724de-2c44-4903-9ec4-502a139a9431].
+Logs are available at [ https://console.cloud.google.com/cloud-build/builds/9a8724de-2c44-4903-9ec4-502a139a9431?project=411798681660 ].
+
+gcloud builds submit only displays logs from Cloud Storage. To view logs from Cloud Logging, run:
+gcloud beta builds submit
+
+Waiting for build to complete. Polling interval: 1 second(s).
+
+BUILD FAILURE: Build step failure: build step 2 "gcr.io/google.com/cloudsdktool/cloud-sdk" failed: step exited with non-zero status: 2
+ERROR: (gcloud.builds.submit) build 9a8724de-2c44-4903-9ec4-502a139a9431 completed with status "FAILURE"
+Creating temporary archive of 2885 file(s) totalling 51.0 MiB before compression.
+Uploading tarball of [.] to [gs://sat-defensoriapueblo_cloudbuild/source/1770097929.697085-d26021fde0a5418aa93a7dd974dc715e.tgz]
+Created [https://cloudbuild.googleapis.com/v1/projects/sat-defensoriapueblo/locations/global/builds/b36b3207-67c8-4606-a5ff-d5017c58af5e].
+Logs are available at [ https://console.cloud.google.com/cloud-build/builds/b36b3207-67c8-4606-a5ff-d5017c58af5e?project=411798681660 ].
+
+gcloud builds submit only displays logs from Cloud Storage. To view logs from Cloud Logging, run:
+gcloud beta builds submit
+
+Waiting for build to complete. Polling interval: 1 second(s).
+
+BUILD FAILURE: Build step failure: build step 2 "gcr.io/google.com/cloudsdktool/cloud-sdk" failed: step exited with non-zero status: 1
+ERROR: (gcloud.builds.submit) build b36b3207-67c8-4606-a5ff-d5017c58af5e completed with status "FAILURE"
+Creating temporary archive of 2885 file(s) totalling 51.0 MiB before compression.
+Uploading tarball of [.] to [gs://sat-defensoriapueblo_cloudbuild/source/1770098193.664384-525a20ae187447979479b6ab07b6100d.tgz]
+Created [https://cloudbuild.googleapis.com/v1/projects/sat-defensoriapueblo/locations/global/builds/c2d26511-294d-4a64-a9a6-9017bcd72853].
+Logs are available at [ https://console.cloud.google.com/cloud-build/builds/c2d26511-294d-4a64-a9a6-9017bcd72853?project=411798681660 ].
+
+gcloud builds submit only displays logs from Cloud Storage. To view logs from Cloud Logging, run:
+gcloud beta builds submit
+
+Waiting for build to complete. Polling interval: 1 second(s).
+ID                                    CREATE_TIME                DURATION  SOURCE                                                                                              IMAGES                                                       STATUS
+c2d26511-294d-4a64-a9a6-9017bcd72853  2026-02-03T05:56:52+00:00  4M19S     gs://sat-defensoriapueblo_cloudbuild/source/1770098193.664384-525a20ae187447979479b6ab07b6100d.tgz  gcr.io/sat-defensoriapueblo/defensoria-middleware (+1 more)  SUCCESS

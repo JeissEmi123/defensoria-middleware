@@ -1,0 +1,23 @@
+2026/01/19 14:09:52 Authorizing with Application Default Credentials
+2026/01/19 14:09:52 [sat-defensoriapueblo:us-central1:defensoria-db] Listening on 127.0.0.1:5433
+2026/01/19 14:09:52 The proxy has started successfully and is ready for new connections!
+2026/01/19 14:10:12 [sat-defensoriapueblo:us-central1:defensoria-db] Accepted connection from 127.0.0.1:54637
+2026/01/19 14:10:13 [sat-defensoriapueblo:us-central1:defensoria-db] client closed the connection
+2026/01/19 14:10:19 [sat-defensoriapueblo:us-central1:defensoria-db] Accepted connection from 127.0.0.1:54643
+2026/01/19 14:10:19 [sat-defensoriapueblo:us-central1:defensoria-db] client closed the connection
+2026/01/19 14:10:26 [sat-defensoriapueblo:us-central1:defensoria-db] Accepted connection from 127.0.0.1:54653
+2026/01/19 14:10:27 [sat-defensoriapueblo:us-central1:defensoria-db] client closed the connection
+2026/01/19 14:11:28 [sat-defensoriapueblo:us-central1:defensoria-db] Accepted connection from 127.0.0.1:54678
+2026/01/19 14:11:29 [sat-defensoriapueblo:us-central1:defensoria-db] instance closed the connection
+2026/01/19 16:55:14 [sat-defensoriapueblo:us-central1:defensoria-db] Accepted connection from 127.0.0.1:62290
+2026/01/19 16:55:14 [sat-defensoriapueblo:us-central1:defensoria-db] client closed the connection
+2026/01/19 16:55:19 [sat-defensoriapueblo:us-central1:defensoria-db] Accepted connection from 127.0.0.1:62299
+2026/01/19 16:55:19 [sat-defensoriapueblo:us-central1:defensoria-db] client closed the connection
+2026/01/19 17:34:28 [sat-defensoriapueblo:us-central1:defensoria-db] Accepted connection from 127.0.0.1:49285
+2026/01/19 17:34:28 [sat-defensoriapueblo:us-central1:defensoria-db] client closed the connection
+2026/01/19 17:34:28 [sat-defensoriapueblo:us-central1:defensoria-db] Accepted connection from 127.0.0.1:49287
+2026/01/19 17:34:29 [sat-defensoriapueblo:us-central1:defensoria-db] client closed the connection
+2026/01/19 17:34:29 [sat-defensoriapueblo:us-central1:defensoria-db] Accepted connection from 127.0.0.1:49290
+2026/01/19 17:34:30 [sat-defensoriapueblo:us-central1:defensoria-db] instance closed the connection
+2026/01/19 17:34:51 [sat-defensoriapueblo:us-central1:defensoria-db] Accepted connection from 127.0.0.1:49334
+2026/01/19 17:34:52 [sat-defensoriapueblo:us-central1:defensoria-db] client closed the connection
