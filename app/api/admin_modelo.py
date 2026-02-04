@@ -66,28 +66,28 @@ async def obtener_categoria_analisis(
     conductas_result = await db.execute(text("""
         SELECT id_conducta_vulneratorias, nombre_conducta, descripcion_conducta, peso_conducta
         FROM sds.conducta_vulneratoria
-        WHERE id_categoria_analisis_senal = :id AND activo = true
+        WHERE id_categoria_analisis_senal = :id
     """), {"id": id_categoria})
     
     # Obtener palabras
     palabras_result = await db.execute(text("""
         SELECT id_palabra_clave, palabra_clave, contexto
         FROM sds.palabra_clave
-        WHERE id_categoria_analisis_senal = :id AND activo = true
+        WHERE id_categoria_analisis_senal = :id
     """), {"id": id_categoria})
     
     # Obtener emoticones
     emoticones_result = await db.execute(text("""
         SELECT id_emoticon, codigo_emoticon, descripcion_emoticon
         FROM sds.emoticon
-        WHERE id_categoria_analisis_senal = :id AND activo = true
+        WHERE id_categoria_analisis_senal = :id
     """), {"id": id_categoria})
     
     # Obtener frases
     frases_result = await db.execute(text("""
         SELECT id_frase_clave, frase, contexto
         FROM sds.frase_clave
-        WHERE id_categoria_analisis_senal = :id AND activo = true
+        WHERE id_categoria_analisis_senal = :id
     """), {"id": id_categoria})
     
     return {
