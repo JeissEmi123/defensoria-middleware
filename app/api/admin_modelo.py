@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.session import get_db_session
 from app.core.dependencies import get_current_user
 from app.database.models import Usuario
-from app.services.senal_service_v2 import SenalServiceV2
+from app.database.models_sds import CategoriaAnalisisSenal, ConductaVulneratoria, PalabraClave, Emoticon, FraseClave
+from sqlalchemy import text, select, func
 
 router = APIRouter(prefix="/admin-modelo", tags=["Admin Modelo"])
 
@@ -11,15 +12,31 @@ router = APIRouter(prefix="/admin-modelo", tags=["Admin Modelo"])
 async def listar_categorias_analisis(
     db: AsyncSession = Depends(get_db_session)
 ):
-    service = SenalServiceV2(db)
-    categorias = await service.listar_categorias_analisis()
+    result = await db.execute(
+        select(
+            CategoriaAnalisisSenal,
+            func.count(ConductaVulneratoria.id_conducta_vulneratoria).label('total_conductas'),
+            func.count(PalabraClave.id_palabra_clave).label('total_palabras'),
+            func.count(Emoticon.id_emoticon).label('total_emoticones'),
+            func.count(FraseClave.id_frase_clave).label('total_frases')
+        )
+        .outerjoin(ConductaVulneratoria)
+        .outerjoin(PalabraClave)
+        .outerjoin(Emoticon)
+        .outerjoin(FraseClave)
+        .group_by(CategoriaAnalisisSenal.id_categoria_analisis_senal)
+    )
     return [
         {
-            "id_categoria_analisis_senal": cat.id_categoria_analisis_senal,
-            "nombre_categoria_analisis": cat.nombre_categoria_analisis,
-            "descripcion_categoria_analisis": cat.descripcion_categoria_analisis,
+            "id_categoria_analisis_senal": row[0].id_categoria_analisis_senal,
+            "nombre_categoria_analisis": row[0].nombre_categoria_analisis,
+            "descripcion_categoria_analisis": row[0].descripcion_categoria_analisis,
+            "total_conductas": row[1],
+            "total_palabras": row[2],
+            "total_emoticones": row[3],
+            "total_frases": row[4]
         }
-        for cat in categorias
+        for row in result.all()
     ]
 
 @router.get("/categorias-analisis/{id_categoria}")
@@ -27,13 +44,328 @@ async def obtener_categoria_analisis(
     id_categoria: int,
     db: AsyncSession = Depends(get_db_session)
 ):
-    service = SenalServiceV2(db)
-    categorias = await service.listar_categorias_analisis(id_categoria)
-    if not categorias:
+    result = await db.execute(
+        select(CategoriaAnalisisSenal).where(CategoriaAnalisisSenal.id_categoria_analisis_senal == id_categoria)
+    )
+    cat = result.scalar_one_or_none()
+    if not cat:
         raise HTTPException(status_code=404, detail="Categoría no encontrada")
-    cat = categorias[0]
+    
+    # Obtener catálogos relacionados
+    conductas = await db.execute(
+        select(ConductaVulneratoria).where(ConductaVulneratoria.id_categoria_analisis_senal == id_categoria)
+    )
+    palabras = await db.execute(
+        select(PalabraClave).where(PalabraClave.id_categoria_analisis_senal == id_categoria)
+    )
+    emoticones = await db.execute(
+        select(Emoticon).where(Emoticon.id_categoria_analisis_senal == id_categoria)
+    )
+    frases = await db.execute(
+        select(FraseClave).where(FraseClave.id_categoria_analisis_senal == id_categoria)
+    )
+    
     return {
-        "id_categoria_analisis_senal": cat.id_categoria_analisis_senal,
-        "nombre_categoria_analisis": cat.nombre_categoria_analisis,
-        "descripcion_categoria_analisis": cat.descripcion_categoria_analisis,
+        "categoria": {
+            "id_categoria_analisis_senal": cat.id_categoria_analisis_senal,
+            "nombre_categoria_analisis": cat.nombre_categoria_analisis,
+            "descripcion_categoria_analisis": cat.descripcion_categoria_analisis
+        },
+        "conductas": [
+            {
+                "id_conducta_vulneratoria": c.id_conducta_vulneratoria,
+                "nombre_conducta": c.nombre_conducta,
+                "descripcion_conducta": c.descripcion_conducta,
+                "peso_conducta": float(c.peso_conducta) if c.peso_conducta else 0
+            }
+            for c in conductas.scalars().all()
+        ],
+        "palabras_clave": [
+            {
+                "id_palabra_clave": p.id_palabra_clave,
+                "palabra_clave": p.palabra_clave,
+                "contexto": p.contexto
+            }
+            for p in palabras.scalars().all()
+        ],
+        "emoticones": [
+            {
+                "id_emoticon": e.id_emoticon,
+                "codigo_emoticon": e.codigo_emoticon,
+                "descripcion_emoticon": e.descripcion_emoticon
+            }
+            for e in emoticones.scalars().all()
+        ],
+        "frases_clave": [
+            {
+                "id_frase_clave": f.id_frase_clave,
+                "frase": f.frase,
+                "contexto": f.contexto
+            }
+            for f in frases.scalars().all()
+        ]
     }
+
+@router.put("/categorias-analisis/{id_categoria}")
+async def actualizar_categoria_analisis(
+    id_categoria: int,
+    data: dict,
+    db: AsyncSession = Depends(get_db_session)
+):
+    result = await db.execute(
+        select(CategoriaAnalisisSenal).where(CategoriaAnalisisSenal.id_categoria_analisis_senal == id_categoria)
+    )
+    cat = result.scalar_one_or_none()
+    if not cat:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+    
+    if "nombre_categoria_analisis" in data:
+        cat.nombre_categoria_analisis = data["nombre_categoria_analisis"]
+    if "descripcion_categoria_analisis" in data:
+        cat.descripcion_categoria_analisis = data["descripcion_categoria_analisis"]
+    
+    await db.commit()
+    return {"success": True}
+
+# CONDUCTAS
+@router.post("/categorias-analisis/{id_categoria}/conductas")
+async def crear_conducta(
+    id_categoria: int,
+    data: dict,
+    db: AsyncSession = Depends(get_db_session)
+):
+    result = await db.execute(text("SELECT COALESCE(MAX(id_conducta_vulneratorias), 0) + 1 FROM sds.conducta_vulneratoria"))
+    nuevo_id = result.scalar()
+    
+    nueva = ConductaVulneratoria(
+        id_conducta_vulneratoria=nuevo_id,
+        nombre_conducta=data.get("nombre_conducta_vulneratoria"),
+        descripcion_conducta=data.get("definicion_conducta_vulneratoria"),
+        peso_conducta=data.get("peso_conducta_vulneratoria", 0),
+        id_categoria_analisis_senal=id_categoria
+    )
+    db.add(nueva)
+    await db.commit()
+    await db.refresh(nueva)
+    return {"id_conducta_vulneratoria": nueva.id_conducta_vulneratoria, "success": True}
+
+@router.put("/categorias-analisis/{id_categoria}/conductas/{conducta_id}")
+async def actualizar_conducta(
+    id_categoria: int,
+    conducta_id: int,
+    data: dict,
+    db: AsyncSession = Depends(get_db_session)
+):
+    result = await db.execute(
+        select(ConductaVulneratoria).where(ConductaVulneratoria.id_conducta_vulneratoria == conducta_id)
+    )
+    conducta = result.scalar_one_or_none()
+    if not conducta:
+        raise HTTPException(status_code=404, detail="Conducta no encontrada")
+    
+    if "nombre_conducta_vulneratoria" in data:
+        conducta.nombre_conducta = data["nombre_conducta_vulneratoria"]
+    if "definicion_conducta_vulneratoria" in data:
+        conducta.descripcion_conducta = data["definicion_conducta_vulneratoria"]
+    if "peso_conducta_vulneratoria" in data:
+        conducta.peso_conducta = data["peso_conducta_vulneratoria"]
+    
+    await db.commit()
+    return {"success": True}
+
+@router.delete("/categorias-analisis/{id_categoria}/conductas/{conducta_id}")
+async def eliminar_conducta(
+    id_categoria: int,
+    conducta_id: int,
+    db: AsyncSession = Depends(get_db_session)
+):
+    result = await db.execute(
+        select(ConductaVulneratoria).where(ConductaVulneratoria.id_conducta_vulneratoria == conducta_id)
+    )
+    conducta = result.scalar_one_or_none()
+    if not conducta:
+        raise HTTPException(status_code=404, detail="Conducta no encontrada")
+    
+    await db.delete(conducta)
+    await db.commit()
+    return {"success": True}
+
+# PALABRAS CLAVE
+@router.post("/categorias-analisis/{id_categoria}/palabras")
+async def crear_palabra(
+    id_categoria: int,
+    data: dict,
+    db: AsyncSession = Depends(get_db_session)
+):
+    result = await db.execute(text("SELECT COALESCE(MAX(id_palabra_clave), 0) + 1 FROM sds.palabra_clave"))
+    nuevo_id = result.scalar()
+    
+    nueva = PalabraClave(
+        id_palabra_clave=nuevo_id,
+        palabra_clave=data.get("nombre_palabra_clave"),
+        contexto=data.get("contexto"),
+        id_categoria_analisis_senal=id_categoria
+    )
+    db.add(nueva)
+    await db.commit()
+    await db.refresh(nueva)
+    return {"id_palabra_clave": nueva.id_palabra_clave, "success": True}
+
+@router.put("/categorias-analisis/{id_categoria}/palabras/{palabra_id}")
+async def actualizar_palabra(
+    id_categoria: int,
+    palabra_id: int,
+    data: dict,
+    db: AsyncSession = Depends(get_db_session)
+):
+    result = await db.execute(
+        select(PalabraClave).where(PalabraClave.id_palabra_clave == palabra_id)
+    )
+    palabra = result.scalar_one_or_none()
+    if not palabra:
+        raise HTTPException(status_code=404, detail="Palabra no encontrada")
+    
+    if "nombre_palabra_clave" in data:
+        palabra.palabra_clave = data["nombre_palabra_clave"]
+    if "contexto" in data:
+        palabra.contexto = data["contexto"]
+    
+    await db.commit()
+    return {"success": True}
+
+@router.delete("/categorias-analisis/{id_categoria}/palabras/{palabra_id}")
+async def eliminar_palabra(
+    id_categoria: int,
+    palabra_id: int,
+    db: AsyncSession = Depends(get_db_session)
+):
+    result = await db.execute(
+        select(PalabraClave).where(PalabraClave.id_palabra_clave == palabra_id)
+    )
+    palabra = result.scalar_one_or_none()
+    if not palabra:
+        raise HTTPException(status_code=404, detail="Palabra no encontrada")
+    
+    await db.delete(palabra)
+    await db.commit()
+    return {"success": True}
+
+# EMOTICONES
+@router.post("/categorias-analisis/{id_categoria}/emoticones")
+async def crear_emoticon(
+    id_categoria: int,
+    data: dict,
+    db: AsyncSession = Depends(get_db_session)
+):
+    result = await db.execute(text("SELECT COALESCE(MAX(id_emoticon), 0) + 1 FROM sds.emoticon"))
+    nuevo_id = result.scalar()
+    
+    nuevo = Emoticon(
+        id_emoticon=nuevo_id,
+        codigo_emoticon=data.get("tipo_emoticon"),
+        descripcion_emoticon=data.get("descripcion_emoticon"),
+        id_categoria_analisis_senal=id_categoria
+    )
+    db.add(nuevo)
+    await db.commit()
+    await db.refresh(nuevo)
+    return {"id_emoticon": nuevo.id_emoticon, "success": True}
+
+@router.put("/categorias-analisis/{id_categoria}/emoticones/{emoticon_id}")
+async def actualizar_emoticon(
+    id_categoria: int,
+    emoticon_id: int,
+    data: dict,
+    db: AsyncSession = Depends(get_db_session)
+):
+    result = await db.execute(
+        select(Emoticon).where(Emoticon.id_emoticon == emoticon_id)
+    )
+    emoticon = result.scalar_one_or_none()
+    if not emoticon:
+        raise HTTPException(status_code=404, detail="Emoticon no encontrado")
+    
+    if "tipo_emoticon" in data:
+        emoticon.codigo_emoticon = data["tipo_emoticon"]
+    if "descripcion_emoticon" in data:
+        emoticon.descripcion_emoticon = data["descripcion_emoticon"]
+    
+    await db.commit()
+    return {"success": True}
+
+@router.delete("/categorias-analisis/{id_categoria}/emoticones/{emoticon_id}")
+async def eliminar_emoticon(
+    id_categoria: int,
+    emoticon_id: int,
+    db: AsyncSession = Depends(get_db_session)
+):
+    result = await db.execute(
+        select(Emoticon).where(Emoticon.id_emoticon == emoticon_id)
+    )
+    emoticon = result.scalar_one_or_none()
+    if not emoticon:
+        raise HTTPException(status_code=404, detail="Emoticon no encontrado")
+    
+    await db.delete(emoticon)
+    await db.commit()
+    return {"success": True}
+
+# FRASES CLAVE
+@router.post("/categorias-analisis/{id_categoria}/frases")
+async def crear_frase(
+    id_categoria: int,
+    data: dict,
+    db: AsyncSession = Depends(get_db_session)
+):
+    result = await db.execute(text("SELECT COALESCE(MAX(id_frase_clave), 0) + 1 FROM sds.frase_clave"))
+    nuevo_id = result.scalar()
+    
+    nueva = FraseClave(
+        id_frase_clave=nuevo_id,
+        frase=data.get("nombre_frase_clave"),
+        contexto=data.get("contexto"),
+        id_categoria_analisis_senal=id_categoria
+    )
+    db.add(nueva)
+    await db.commit()
+    await db.refresh(nueva)
+    return {"id_frase_clave": nueva.id_frase_clave, "success": True}
+
+@router.put("/categorias-analisis/{id_categoria}/frases/{frase_id}")
+async def actualizar_frase(
+    id_categoria: int,
+    frase_id: int,
+    data: dict,
+    db: AsyncSession = Depends(get_db_session)
+):
+    result = await db.execute(
+        select(FraseClave).where(FraseClave.id_frase_clave == frase_id)
+    )
+    frase = result.scalar_one_or_none()
+    if not frase:
+        raise HTTPException(status_code=404, detail="Frase no encontrada")
+    
+    if "nombre_frase_clave" in data:
+        frase.frase = data["nombre_frase_clave"]
+    if "contexto" in data:
+        frase.contexto = data["contexto"]
+    
+    await db.commit()
+    return {"success": True}
+
+@router.delete("/categorias-analisis/{id_categoria}/frases/{frase_id}")
+async def eliminar_frase(
+    id_categoria: int,
+    frase_id: int,
+    db: AsyncSession = Depends(get_db_session)
+):
+    result = await db.execute(
+        select(FraseClave).where(FraseClave.id_frase_clave == frase_id)
+    )
+    frase = result.scalar_one_or_none()
+    if not frase:
+        raise HTTPException(status_code=404, detail="Frase no encontrada")
+    
+    await db.delete(frase)
+    await db.commit()
+    return {"success": True}
