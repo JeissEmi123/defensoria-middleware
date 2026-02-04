@@ -12,32 +12,40 @@ router = APIRouter(prefix="/admin-modelo", tags=["Admin Modelo"])
 async def listar_categorias_analisis(
     db: AsyncSession = Depends(get_db_session)
 ):
-    result = await db.execute(
-        select(
-            CategoriaAnalisisSenal,
-            func.count(ConductaVulneratoria.id_conducta_vulneratoria).label('total_conductas'),
-            func.count(PalabraClave.id_palabra_clave).label('total_palabras'),
-            func.count(Emoticon.id_emoticon).label('total_emoticones'),
-            func.count(FraseClave.id_frase_clave).label('total_frases')
+    result = await db.execute(select(CategoriaAnalisisSenal))
+    categorias = result.scalars().all()
+    
+    lista = []
+    for cat in categorias:
+        # Contar relacionados
+        conductas_count = await db.execute(
+            select(func.count()).select_from(ConductaVulneratoria)
+            .where(ConductaVulneratoria.id_categoria_analisis_senal == cat.id_categoria_analisis_senal)
         )
-        .outerjoin(ConductaVulneratoria)
-        .outerjoin(PalabraClave)
-        .outerjoin(Emoticon)
-        .outerjoin(FraseClave)
-        .group_by(CategoriaAnalisisSenal.id_categoria_analisis_senal)
-    )
-    return [
-        {
-            "id_categoria_analisis_senal": row[0].id_categoria_analisis_senal,
-            "nombre_categoria_analisis": row[0].nombre_categoria_analisis,
-            "descripcion_categoria_analisis": row[0].descripcion_categoria_analisis,
-            "total_conductas": row[1],
-            "total_palabras": row[2],
-            "total_emoticones": row[3],
-            "total_frases": row[4]
-        }
-        for row in result.all()
-    ]
+        palabras_count = await db.execute(
+            select(func.count()).select_from(PalabraClave)
+            .where(PalabraClave.id_categoria_analisis_senal == cat.id_categoria_analisis_senal)
+        )
+        emoticones_count = await db.execute(
+            select(func.count()).select_from(Emoticon)
+            .where(Emoticon.id_categoria_analisis_senal == cat.id_categoria_analisis_senal)
+        )
+        frases_count = await db.execute(
+            select(func.count()).select_from(FraseClave)
+            .where(FraseClave.id_categoria_analisis_senal == cat.id_categoria_analisis_senal)
+        )
+        
+        lista.append({
+            "id_categoria_analisis_senal": cat.id_categoria_analisis_senal,
+            "nombre_categoria_analisis": cat.nombre_categoria_analisis,
+            "descripcion_categoria_analisis": cat.descripcion_categoria_analisis,
+            "total_conductas": conductas_count.scalar(),
+            "total_palabras": palabras_count.scalar(),
+            "total_emoticones": emoticones_count.scalar(),
+            "total_frases": frases_count.scalar()
+        })
+    
+    return lista
 
 @router.get("/categorias-analisis/{id_categoria}")
 async def obtener_categoria_analisis(
