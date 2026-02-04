@@ -52,72 +52,84 @@ async def obtener_categoria_analisis(
     id_categoria: int,
     db: AsyncSession = Depends(get_db_session)
 ):
-    try:
-        result = await db.execute(
-            select(CategoriaAnalisisSenal).where(CategoriaAnalisisSenal.id_categoria_analisis_senal == id_categoria)
-        )
-        cat = result.scalar_one_or_none()
-        if not cat:
-            raise HTTPException(status_code=404, detail="Categoría no encontrada")
-        
-        # Obtener catálogos relacionados
-        conductas = await db.execute(
-            select(ConductaVulneratoria).where(ConductaVulneratoria.id_categoria_analisis_senal == id_categoria)
-        )
-        palabras = await db.execute(
-            select(PalabraClave).where(PalabraClave.id_categoria_analisis_senal == id_categoria)
-        )
-        emoticones = await db.execute(
-            select(Emoticon).where(Emoticon.id_categoria_analisis_senal == id_categoria)
-        )
-        frases = await db.execute(
-            select(FraseClave).where(FraseClave.id_categoria_analisis_senal == id_categoria)
-        )
-        
-        return {
-            "categoria": {
-                "id_categoria_analisis_senal": cat.id_categoria_analisis_senal,
-                "nombre_categoria_analisis": cat.nombre_categoria_analisis,
-                "descripcion_categoria_analisis": cat.descripcion_categoria_analisis
-            },
-            "conductas": [
-                {
-                    "id_conducta_vulneratoria": c.id_conducta_vulneratoria,
-                    "nombre_conducta": c.nombre_conducta,
-                    "descripcion_conducta": c.descripcion_conducta,
-                    "peso_conducta": float(c.peso_conducta) if c.peso_conducta else 0
-                }
-                for c in conductas.scalars().all()
-            ],
-            "palabras_clave": [
-                {
-                    "id_palabra_clave": p.id_palabra_clave,
-                    "palabra_clave": p.palabra_clave,
-                    "contexto": p.contexto
-                }
-                for p in palabras.scalars().all()
-            ],
-            "emoticones": [
-                {
-                    "id_emoticon": e.id_emoticon,
-                    "codigo_emoticon": e.codigo_emoticon,
-                    "descripcion_emoticon": e.descripcion_emoticon
-                }
-                for e in emoticones.scalars().all()
-            ],
-            "frases_clave": [
-                {
-                    "id_frase_clave": f.id_frase_clave,
-                    "frase": f.frase,
-                    "contexto": f.contexto
-                }
-                for f in frases.scalars().all()
-            ]
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        return {"error": str(e), "type": type(e).__name__}
+    # Obtener categoría
+    cat_result = await db.execute(text("""
+        SELECT id_categoria_analisis_senal, nombre_categoria_analisis, descripcion_categoria_analisis
+        FROM sds.categoria_analisis_senal
+        WHERE id_categoria_analisis_senal = :id
+    """), {"id": id_categoria})
+    cat_row = cat_result.fetchone()
+    if not cat_row:
+        raise HTTPException(status_code=404, detail="Categoría no encontrada")
+    
+    # Obtener conductas
+    conductas_result = await db.execute(text("""
+        SELECT id_conducta_vulneratorias, nombre_conducta, descripcion_conducta, peso_conducta
+        FROM sds.conducta_vulneratoria
+        WHERE id_categoria_analisis_senal = :id AND activo = true
+    """), {"id": id_categoria})
+    
+    # Obtener palabras
+    palabras_result = await db.execute(text("""
+        SELECT id_palabra_clave, palabra_clave, contexto
+        FROM sds.palabra_clave
+        WHERE id_categoria_analisis_senal = :id AND activo = true
+    """), {"id": id_categoria})
+    
+    # Obtener emoticones
+    emoticones_result = await db.execute(text("""
+        SELECT id_emoticon, codigo_emoticon, descripcion_emoticon
+        FROM sds.emoticon
+        WHERE id_categoria_analisis_senal = :id AND activo = true
+    """), {"id": id_categoria})
+    
+    # Obtener frases
+    frases_result = await db.execute(text("""
+        SELECT id_frase_clave, frase, contexto
+        FROM sds.frase_clave
+        WHERE id_categoria_analisis_senal = :id AND activo = true
+    """), {"id": id_categoria})
+    
+    return {
+        "categoria": {
+            "id_categoria_analisis_senal": cat_row[0],
+            "nombre_categoria_analisis": cat_row[1],
+            "descripcion_categoria_analisis": cat_row[2]
+        },
+        "conductas": [
+            {
+                "id_conducta_vulneratoria": row[0],
+                "nombre_conducta": row[1],
+                "descripcion_conducta": row[2],
+                "peso_conducta": float(row[3]) if row[3] else 0
+            }
+            for row in conductas_result.fetchall()
+        ],
+        "palabras_clave": [
+            {
+                "id_palabra_clave": row[0],
+                "palabra_clave": row[1],
+                "contexto": row[2]
+            }
+            for row in palabras_result.fetchall()
+        ],
+        "emoticones": [
+            {
+                "id_emoticon": row[0],
+                "codigo_emoticon": row[1],
+                "descripcion_emoticon": row[2]
+            }
+            for row in emoticones_result.fetchall()
+        ],
+        "frases_clave": [
+            {
+                "id_frase_clave": row[0],
+                "frase": row[1],
+                "contexto": row[2]
+            }
+            for row in frases_result.fetchall()
+        ]
+    }
 
 @router.put("/categorias-analisis/{id_categoria}")
 async def actualizar_categoria_analisis(
