@@ -84,15 +84,19 @@ async def crear_figura_publica(
     data: dict,
     db: AsyncSession = Depends(get_db_session)
 ):
-    nueva = FiguraPublica(
-        nombre_actor=data.get("nombre_actor"),
-        peso_actor=data.get("peso_actor"),
-        id_categoria_observacion=data.get("id_categoria_observacion")
-    )
-    db.add(nueva)
-    await db.commit()
-    await db.refresh(nueva)
-    return {"id_figura_publica": nueva.id_figura_publica, "success": True}
+    try:
+        nueva = FiguraPublica(
+            nombre_actor=data.get("nombre_actor"),
+            peso_actor=data.get("peso_actor"),
+            id_categoria_observacion=data.get("id_categoria_observacion")
+        )
+        db.add(nueva)
+        await db.commit()
+        await db.refresh(nueva)
+        return {"id_figura_publica": nueva.id_figura_publica, "success": True}
+    except Exception as e:
+        await db.rollback()
+        return {"error": str(e), "type": type(e).__name__}
 
 @router.get("/medios-digitales/categoria/{id_categoria}")
 async def listar_medios_digitales(
