@@ -3,7 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database.session import get_db_session
 from app.core.dependencies import get_current_user
 from app.database.models import Usuario
-from sqlalchemy import text
+from app.database.models_sds import FiguraPublica, Influencer, MedioDigital, Entidad
+from sqlalchemy import text, select
 
 router = APIRouter(prefix="/api/v1/crud-unificado", tags=["CRUD Unificado"])
 
@@ -83,14 +84,15 @@ async def crear_figura_publica(
     data: dict,
     db: AsyncSession = Depends(get_db_session)
 ):
-    result = await db.execute(text("""
-        INSERT INTO sds.figuras_publicas (nombre_actor, peso_actor, id_categoria_observacion)
-        VALUES (:nombre, :peso, :id_categoria)
-        RETURNING id_figura_publica
-    """), {"nombre": data.get("nombre_actor"), "peso": data.get("peso_actor"), "id_categoria": data.get("id_categoria_observacion")})
-    new_id = result.scalar()
+    nueva = FiguraPublica(
+        nombre_actor=data.get("nombre_actor"),
+        peso_actor=data.get("peso_actor"),
+        id_categoria_observacion=data.get("id_categoria_observacion")
+    )
+    db.add(nueva)
     await db.commit()
-    return {"id_figura_publica": new_id, "success": True}
+    await db.refresh(nueva)
+    return {"id_figura_publica": nueva.id_figura_publica, "success": True}
 
 @router.get("/medios-digitales/categoria/{id_categoria}")
 async def listar_medios_digitales(
@@ -145,14 +147,15 @@ async def crear_medio_digital(
     data: dict,
     db: AsyncSession = Depends(get_db_session)
 ):
-    result = await db.execute(text("""
-        INSERT INTO sds.medios_digitales (nombre_medio_digital, peso_medio_digital, id_categoria_observacion)
-        VALUES (:nombre, :peso, :id_categoria)
-        RETURNING id_medio_digital
-    """), {"nombre": data.get("nombre_medio_digital"), "peso": data.get("peso_medio_digital"), "id_categoria": data.get("id_categoria_observacion")})
-    new_id = result.scalar()
+    nuevo = MedioDigital(
+        nombre_medio_digital=data.get("nombre_medio_digital"),
+        peso_medio_digital=data.get("peso_medio_digital"),
+        id_categoria_observacion=data.get("id_categoria_observacion")
+    )
+    db.add(nuevo)
     await db.commit()
-    return {"id_medio_digital": new_id, "success": True}
+    await db.refresh(nuevo)
+    return {"id_medio_digital": nuevo.id_medio_digital, "success": True}
 
 @router.get("/influencers/categoria/{id_categoria}")
 async def listar_influencers(
@@ -207,14 +210,15 @@ async def crear_influencer(
     data: dict,
     db: AsyncSession = Depends(get_db_session)
 ):
-    result = await db.execute(text("""
-        INSERT INTO sds.influencers (nombre_influencer, peso_influencer, id_categoria_observacion)
-        VALUES (:nombre, :peso, :id_categoria)
-        RETURNING id_influencer
-    """), {"nombre": data.get("nombre_influencer"), "peso": data.get("peso_influencer"), "id_categoria": data.get("id_categoria_observacion")})
-    new_id = result.scalar()
+    nuevo = Influencer(
+        nombre_influencer=data.get("nombre_influencer"),
+        peso_influencer=data.get("peso_influencer"),
+        id_categoria_observacion=data.get("id_categoria_observacion")
+    )
+    db.add(nuevo)
     await db.commit()
-    return {"id_influencer": new_id, "success": True}
+    await db.refresh(nuevo)
+    return {"id_influencer": nuevo.id_influencer, "success": True}
 
 @router.get("/entidades/categoria/{id_categoria}")
 async def listar_entidades(
@@ -269,11 +273,12 @@ async def crear_entidad(
     data: dict,
     db: AsyncSession = Depends(get_db_session)
 ):
-    result = await db.execute(text("""
-        INSERT INTO sds.entidades (nombre_entidad, peso_entidad, id_categoria_observacion)
-        VALUES (:nombre, :peso, :id_categoria)
-        RETURNING id_entidades
-    """), {"nombre": data.get("nombre_entidad"), "peso": data.get("peso_entidad"), "id_categoria": data.get("id_categoria_observacion")})
-    new_id = result.scalar()
+    nueva = Entidad(
+        nombre_entidad=data.get("nombre_entidad"),
+        peso_entidad=data.get("peso_entidad"),
+        id_categoria_observacion=data.get("id_categoria_observacion")
+    )
+    db.add(nueva)
     await db.commit()
-    return {"id_entidad": new_id, "success": True}
+    await db.refresh(nueva)
+    return {"id_entidad": nueva.id_entidad, "success": True}
