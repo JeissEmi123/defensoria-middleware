@@ -85,7 +85,12 @@ async def crear_figura_publica(
     db: AsyncSession = Depends(get_db_session)
 ):
     try:
+        # Obtener el siguiente ID de la secuencia
+        result = await db.execute(text("SELECT COALESCE(MAX(id_figura_publica), 0) + 1 FROM sds.figuras_publicas"))
+        nuevo_id = result.scalar()
+        
         nueva = FiguraPublica(
+            id_figura_publica=nuevo_id,
             nombre_actor=data.get("nombre_actor"),
             peso_actor=data.get("peso_actor"),
             id_categoria_observacion=data.get("id_categoria_observacion")
@@ -151,7 +156,11 @@ async def crear_medio_digital(
     data: dict,
     db: AsyncSession = Depends(get_db_session)
 ):
+    result = await db.execute(text("SELECT COALESCE(MAX(id_medio_digital), 0) + 1 FROM sds.medios_digitales"))
+    nuevo_id = result.scalar()
+    
     nuevo = MedioDigital(
+        id_medio_digital=nuevo_id,
         nombre_medio_digital=data.get("nombre_medio_digital"),
         peso_medio_digital=data.get("peso_medio_digital"),
         id_categoria_observacion=data.get("id_categoria_observacion")
@@ -214,7 +223,11 @@ async def crear_influencer(
     data: dict,
     db: AsyncSession = Depends(get_db_session)
 ):
+    result = await db.execute(text("SELECT COALESCE(MAX(id_influencer), 0) + 1 FROM sds.influencers"))
+    nuevo_id = result.scalar()
+    
     nuevo = Influencer(
+        id_influencer=nuevo_id,
         nombre_influencer=data.get("nombre_influencer"),
         peso_influencer=data.get("peso_influencer"),
         id_categoria_observacion=data.get("id_categoria_observacion")
@@ -277,7 +290,11 @@ async def crear_entidad(
     data: dict,
     db: AsyncSession = Depends(get_db_session)
 ):
+    result = await db.execute(text("SELECT COALESCE(MAX(id_entidades), 0) + 1 FROM sds.entidades"))
+    nuevo_id = result.scalar()
+    
     nueva = Entidad(
+        id_entidad=nuevo_id,
         nombre_entidad=data.get("nombre_entidad"),
         peso_entidad=data.get("peso_entidad"),
         id_categoria_observacion=data.get("id_categoria_observacion")
