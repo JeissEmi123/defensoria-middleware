@@ -52,67 +52,72 @@ async def obtener_categoria_analisis(
     id_categoria: int,
     db: AsyncSession = Depends(get_db_session)
 ):
-    result = await db.execute(
-        select(CategoriaAnalisisSenal).where(CategoriaAnalisisSenal.id_categoria_analisis_senal == id_categoria)
-    )
-    cat = result.scalar_one_or_none()
-    if not cat:
-        raise HTTPException(status_code=404, detail="Categoría no encontrada")
-    
-    # Obtener catálogos relacionados
-    conductas = await db.execute(
-        select(ConductaVulneratoria).where(ConductaVulneratoria.id_categoria_analisis_senal == id_categoria)
-    )
-    palabras = await db.execute(
-        select(PalabraClave).where(PalabraClave.id_categoria_analisis_senal == id_categoria)
-    )
-    emoticones = await db.execute(
-        select(Emoticon).where(Emoticon.id_categoria_analisis_senal == id_categoria)
-    )
-    frases = await db.execute(
-        select(FraseClave).where(FraseClave.id_categoria_analisis_senal == id_categoria)
-    )
-    
-    return {
-        "categoria": {
-            "id_categoria_analisis_senal": cat.id_categoria_analisis_senal,
-            "nombre_categoria_analisis": cat.nombre_categoria_analisis,
-            "descripcion_categoria_analisis": cat.descripcion_categoria_analisis
-        },
-        "conductas": [
-            {
-                "id_conducta_vulneratoria": c.id_conducta_vulneratoria,
-                "nombre_conducta": c.nombre_conducta,
-                "descripcion_conducta": c.descripcion_conducta,
-                "peso_conducta": float(c.peso_conducta) if c.peso_conducta else 0
-            }
-            for c in conductas.scalars().all()
-        ],
-        "palabras_clave": [
-            {
-                "id_palabra_clave": p.id_palabra_clave,
-                "palabra_clave": p.palabra_clave,
-                "contexto": p.contexto
-            }
-            for p in palabras.scalars().all()
-        ],
-        "emoticones": [
-            {
-                "id_emoticon": e.id_emoticon,
-                "codigo_emoticon": e.codigo_emoticon,
-                "descripcion_emoticon": e.descripcion_emoticon
-            }
-            for e in emoticones.scalars().all()
-        ],
-        "frases_clave": [
-            {
-                "id_frase_clave": f.id_frase_clave,
-                "frase": f.frase,
-                "contexto": f.contexto
-            }
-            for f in frases.scalars().all()
-        ]
-    }
+    try:
+        result = await db.execute(
+            select(CategoriaAnalisisSenal).where(CategoriaAnalisisSenal.id_categoria_analisis_senal == id_categoria)
+        )
+        cat = result.scalar_one_or_none()
+        if not cat:
+            raise HTTPException(status_code=404, detail="Categoría no encontrada")
+        
+        # Obtener catálogos relacionados
+        conductas = await db.execute(
+            select(ConductaVulneratoria).where(ConductaVulneratoria.id_categoria_analisis_senal == id_categoria)
+        )
+        palabras = await db.execute(
+            select(PalabraClave).where(PalabraClave.id_categoria_analisis_senal == id_categoria)
+        )
+        emoticones = await db.execute(
+            select(Emoticon).where(Emoticon.id_categoria_analisis_senal == id_categoria)
+        )
+        frases = await db.execute(
+            select(FraseClave).where(FraseClave.id_categoria_analisis_senal == id_categoria)
+        )
+        
+        return {
+            "categoria": {
+                "id_categoria_analisis_senal": cat.id_categoria_analisis_senal,
+                "nombre_categoria_analisis": cat.nombre_categoria_analisis,
+                "descripcion_categoria_analisis": cat.descripcion_categoria_analisis
+            },
+            "conductas": [
+                {
+                    "id_conducta_vulneratoria": c.id_conducta_vulneratoria,
+                    "nombre_conducta": c.nombre_conducta,
+                    "descripcion_conducta": c.descripcion_conducta,
+                    "peso_conducta": float(c.peso_conducta) if c.peso_conducta else 0
+                }
+                for c in conductas.scalars().all()
+            ],
+            "palabras_clave": [
+                {
+                    "id_palabra_clave": p.id_palabra_clave,
+                    "palabra_clave": p.palabra_clave,
+                    "contexto": p.contexto
+                }
+                for p in palabras.scalars().all()
+            ],
+            "emoticones": [
+                {
+                    "id_emoticon": e.id_emoticon,
+                    "codigo_emoticon": e.codigo_emoticon,
+                    "descripcion_emoticon": e.descripcion_emoticon
+                }
+                for e in emoticones.scalars().all()
+            ],
+            "frases_clave": [
+                {
+                    "id_frase_clave": f.id_frase_clave,
+                    "frase": f.frase,
+                    "contexto": f.contexto
+                }
+                for f in frases.scalars().all()
+            ]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        return {"error": str(e), "type": type(e).__name__}
 
 @router.put("/categorias-analisis/{id_categoria}")
 async def actualizar_categoria_analisis(
