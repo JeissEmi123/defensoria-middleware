@@ -184,21 +184,23 @@ async def crear_conducta(
     data: dict,
     db: AsyncSession = Depends(get_db_session)
 ):
-    result = await db.execute(text("SELECT COALESCE(MAX(id_conducta_vulneratorias), 0) + 1 FROM sds.conducta_vulneratoria"))
+    result = await db.execute(text("""
+        INSERT INTO sds.conducta_vulneratoria 
+        (id_conducta_vulneratorias, nombre_conducta, descripcion_conducta, peso_conducta, id_categoria_analisis_senal, activo)
+        VALUES (
+            (SELECT COALESCE(MAX(id_conducta_vulneratorias), 0) + 1 FROM sds.conducta_vulneratoria),
+            :nombre, :descripcion, :peso, :id_categoria, true
+        )
+        RETURNING id_conducta_vulneratorias
+    """), {
+        "nombre": data.get("nombre_conducta_vulneratoria"),
+        "descripcion": data.get("definicion_conducta_vulneratoria"),
+        "peso": data.get("peso_conducta_vulneratoria", 0),
+        "id_categoria": id_categoria
+    })
     nuevo_id = result.scalar()
-    
-    nueva = ConductaVulneratoria(
-        id_conducta_vulneratoria=nuevo_id,
-        nombre_conducta=data.get("nombre_conducta_vulneratoria"),
-        descripcion_conducta=data.get("definicion_conducta_vulneratoria"),
-        peso_conducta=data.get("peso_conducta_vulneratoria", 0),
-        id_categoria_analisis_senal=id_categoria,
-        activo=True
-    )
-    db.add(nueva)
     await db.commit()
-    await db.refresh(nueva)
-    return {"id_conducta_vulneratoria": nueva.id_conducta_vulneratoria, "success": True}
+    return {"id_conducta_vulneratoria": nuevo_id, "success": True}
 
 @router.put("/categorias-analisis/{id_categoria}/conductas/{conducta_id}")
 async def actualizar_conducta(
