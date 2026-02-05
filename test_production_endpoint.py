@@ -16,17 +16,25 @@ async def test_production_endpoint():
     print("🧪 PROBANDO ENDPOINT home/dashboard CON CONFIGURACIÓN DE PRODUCCIÓN")
     print("=" * 70)
     
-    # Usar las mismas credenciales que Cloud Run
-    database_url = "postgresql+asyncpg://app_user:AppUser2026!@127.0.0.1:5433/defensoria_db"
+    # Credenciales via variables de entorno (NO hardcodear secretos).
+    host = os.getenv("PGHOST", "127.0.0.1")
+    port = int(os.getenv("PGPORT", "5433"))  # Proxy local
+    database = os.getenv("PGDATABASE", "defensoria_db")
+    user = os.getenv("PGUSER", "app_user")
+    password = os.getenv("PGPASSWORD") or os.getenv("POSTGRES_PASSWORD")
+
+    if not password:
+        print("\n❌ Falta la contraseña. Define PGPASSWORD o POSTGRES_PASSWORD y reintenta.")
+        return False
     
     try:
         # Conectar usando las credenciales de producción
         conn = await asyncpg.connect(
-            host='127.0.0.1',
-            port=5433,  # Proxy local
-            database='defensoria_db',
-            user='app_user',
-            password='AppUser2026!'
+            host=host,
+            port=port,
+            database=database,
+            user=user,
+            password=password,
         )
         
         print("✅ Conexión exitosa con credenciales de producción")

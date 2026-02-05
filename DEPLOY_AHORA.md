@@ -29,7 +29,7 @@ class Config:
 return resultado  # Ya viene serializado
 ```
 
-### 3. `cloudbuild-prod.yaml` - Variables simplificadas ✅
+### 3. `cloudbuild-prod.yaml` - Deploy sin secretos versionados ✅
 
 ## 🔧 PASOS PARA DESPLEGAR
 
@@ -61,7 +61,7 @@ gcloud run deploy defensoria-middleware-prod \
   --region us-central1 \
   --platform managed \
   --allow-unauthenticated \
-  --set-env-vars="APP_ENV=production,DATABASE_URL=postgresql+asyncpg://app_user:AppUser2026!@/defensoria_db?host=/cloudsql/sat-defensoriapueblo:us-central1:defensoria-db,POSTGRES_USER=app_user,POSTGRES_PASSWORD=AppUser2026!,POSTGRES_DB=defensoria_db,POSTGRES_PORT=5432,EMAIL_SERVICE=none,EMAIL_FROM=jcamargom@agatadata.com,COORDINADOR_EMAIL=jcamargom@agatadata.com,GCP_PROJECT_ID=sat-defensoriapueblo,GMAIL_USE_OAUTH=false,LOG_LEVEL=INFO,DEBUG=false" \
+  --set-env-vars="APP_ENV=production,DATABASE_URL=postgresql+asyncpg://<POSTGRES_USER>:<POSTGRES_PASSWORD>@/defensoria_db?host=/cloudsql/<PROJECT_ID>:us-central1:defensoria-db,POSTGRES_USER=<POSTGRES_USER>,POSTGRES_PASSWORD=<POSTGRES_PASSWORD>,POSTGRES_DB=<POSTGRES_DB>,POSTGRES_PORT=5432,EMAIL_SERVICE=none,EMAIL_FROM=<EMAIL_FROM>,COORDINADOR_EMAIL=<COORDINADOR_EMAIL>,GCP_PROJECT_ID=sat-defensoriapueblo,GMAIL_USE_OAUTH=false,LOG_LEVEL=INFO,DEBUG=false" \
   --add-cloudsql-instances=sat-defensoriapueblo:us-central1:defensoria-db \
   --min-instances=1 \
   --max-instances=10 \
@@ -122,7 +122,7 @@ El error más común es que Pydantic rechaza las variables de entorno. Verifica:
 |---------|--------|
 | `app/config.py` | ✅ Variables SMTP agregadas + `extra="ignore"` |
 | `app/api/senales_v2.py` | ✅ Removido `jsonable_encoder` |
-| `cloudbuild-prod.yaml` | ✅ Variables simplificadas |
+| `cloudbuild-prod.yaml` | ✅ Deploy sin secretos versionados |
 | Git commit | ✅ f3ee8ad |
 
 ## 🎯 Resultado Esperado

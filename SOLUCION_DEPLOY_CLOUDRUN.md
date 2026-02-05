@@ -46,23 +46,23 @@ class Config:
 
 ### 2. Actualización de `cloudbuild-prod.yaml`
 
-Se simplificaron las variables de entorno para incluir solo las necesarias:
+Se removieron secretos hardcodeados del repositorio. El despliegue ya no versiona valores sensibles: configura variables en Cloud Run (recomendado) o vía CI/CD (GitHub Actions secret `CLOUD_RUN_ENV_VARS`).
 
-```yaml
---set-env-vars
-'APP_ENV=production,
-DATABASE_URL=postgresql+asyncpg://app_user:AppUser2026!@/defensoria_db?host=/cloudsql/sat-defensoriapueblo:us-central1:defensoria-db,
-POSTGRES_USER=app_user,
-POSTGRES_PASSWORD=AppUser2026!,
-POSTGRES_DB=defensoria_db,
-POSTGRES_PORT=5432,
-EMAIL_SERVICE=none,
-EMAIL_FROM=jcamargom@agatadata.com,
-COORDINADOR_EMAIL=jcamargom@agatadata.com,
-GCP_PROJECT_ID=sat-defensoriapueblo,
-GMAIL_USE_OAUTH=false,
-LOG_LEVEL=INFO,
-DEBUG=false'
+Ejemplo (plantilla, **no** pegar secretos reales en el repo):
+```text
+APP_ENV=production
+DATABASE_URL=postgresql+asyncpg://<POSTGRES_USER>:<POSTGRES_PASSWORD>@/defensoria_db?host=/cloudsql/<PROJECT_ID>:us-central1:defensoria-db
+POSTGRES_USER=<POSTGRES_USER>
+POSTGRES_PASSWORD=<POSTGRES_PASSWORD>
+POSTGRES_DB=<POSTGRES_DB>
+POSTGRES_PORT=5432
+EMAIL_SERVICE=none
+EMAIL_FROM=<EMAIL_FROM>
+COORDINADOR_EMAIL=<COORDINADOR_EMAIL>
+GCP_PROJECT_ID=sat-defensoriapueblo
+GMAIL_USE_OAUTH=false
+LOG_LEVEL=INFO
+DEBUG=false
 ```
 
 ### 3. Creación de `.env.cloudrun`

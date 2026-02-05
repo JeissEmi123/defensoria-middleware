@@ -14,6 +14,7 @@ La API queda en `http://localhost:9000` y el health check en `http://localhost:9
 - `DOCUMENTACION_TECNICA.md`: arquitectura, requisitos, ejecucion local, CI/CD, seguridad y rollback.
 - `LOCAL_SETUP.md`: guia detallada para entorno local.
 - `DEPLOY_QUICK.md`: flujo rapido de despliegue.
+- `.github/README.md`: configuracion de CI/CD (GitHub Actions, secretos, WIF/OIDC).
 
 ## Arquitectura (resumen)
 - FastAPI como framework principal.
@@ -30,3 +31,9 @@ La API queda en `http://localhost:9000` y el health check en `http://localhost:9
 
 ## Soporte
 Revisa `TROUBLESHOOTING.md` para diagnostico y soluciones comunes.
+
+## CI/CD (Produccion)
+- Workflow: `.github/workflows/deploy.yml`.
+- Se dispara con `push` a `master`/`main` o manualmente con `workflow_dispatch`.
+- Auth recomendado (sin llaves): `./setup-github-wif.sh --gh --project-number 411798681660`.
+- Auth alternativa: secret `GCP_SA_KEY` (ver `.github/README.md`).

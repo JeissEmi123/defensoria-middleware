@@ -68,7 +68,7 @@ gcloud run services update defensoria-middleware-prod \
 gcloud run deploy defensoria-middleware-prod-v2 \
   --image gcr.io/sat-defensoriapueblo/defensoria-middleware:fix \
   --region us-central1 \
-  --set-env-vars="APP_ENV=production,EMAIL_SERVICE=none,SECRET_KEY=prod-secret-2026,JWT_SECRET_KEY=jwt-prod-2026,JWT_REFRESH_SECRET_KEY=jwt-refresh-prod-2026,ADMIN_DEFAULT_PASSWORD=Admin2026!,POSTGRES_USER=app_user,POSTGRES_PASSWORD=AppUser2026!,POSTGRES_DB=defensoria_db,POSTGRES_PORT=5432,DATABASE_URL=postgresql+asyncpg://app_user:AppUser2026!@/defensoria_db?host=/cloudsql/sat-defensoriapueblo:us-central1:defensoria-db" \
+  --set-env-vars="APP_ENV=production,EMAIL_SERVICE=none,SECRET_KEY=<SECRET_KEY>,JWT_SECRET_KEY=<JWT_SECRET_KEY>,JWT_REFRESH_SECRET_KEY=<JWT_REFRESH_SECRET_KEY>,ADMIN_DEFAULT_PASSWORD=<ADMIN_DEFAULT_PASSWORD>,POSTGRES_USER=<POSTGRES_USER>,POSTGRES_PASSWORD=<POSTGRES_PASSWORD>,POSTGRES_DB=<POSTGRES_DB>,POSTGRES_PORT=5432,DATABASE_URL=postgresql+asyncpg://<POSTGRES_USER>:<POSTGRES_PASSWORD>@/defensoria_db?host=/cloudsql/<PROJECT_ID>:us-central1:defensoria-db" \
   --add-cloudsql-instances=sat-defensoriapueblo:us-central1:defensoria-db \
   --cpu=2 \
   --memory=4Gi \

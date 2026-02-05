@@ -1,6 +1,16 @@
 #!/bin/bash
 set -e
 
+SET_GH_SECRET=false
+
+for arg in "$@"; do
+  case "$arg" in
+    --gh|--set-gh-secret)
+      SET_GH_SECRET=true
+      ;;
+  esac
+done
+
 echo " Configurando GitHub Actions para CI/CD"
 echo "=========================================="
 
@@ -52,3 +62,26 @@ echo "=========================================="
 echo ""
 echo "  IMPORTANTE: Elimina el archivo después de copiarlo:"
 echo "   rm github-actions-key.json"
+
+if [ "$SET_GH_SECRET" = true ]; then
+  if command -v gh >/dev/null 2>&1; then
+    echo ""
+    echo " Intentando configurar el secret en GitHub con gh..."
+
+    REPO=""
+    REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null || true)
+    if [ -z "$REPO" ]; then
+      REPO=$(git remote get-url origin 2>/dev/null | sed -E 's#^https://github.com/##; s#\\.git$##' || true)
+    fi
+
+    if [ -n "$REPO" ]; then
+      gh secret set GCP_SA_KEY --repo "$REPO" < github-actions-key.json
+      echo "✅ Secret GCP_SA_KEY configurado en $REPO"
+    else
+      echo "⚠️  No se pudo detectar el repo. Ejecuta manualmente:"
+      echo "   gh secret set GCP_SA_KEY --repo OWNER/REPO < github-actions-key.json"
+    fi
+  else
+    echo "⚠️  gh no está instalado. Configura el secret manualmente en GitHub."
+  fi
+fi

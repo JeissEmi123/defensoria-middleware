@@ -4,12 +4,15 @@ on:
   push:
     branches:
       - master
+      - main
   workflow_dispatch:
 
 env:
   PROJECT_ID: sat-defensoriapueblo
   SERVICE_NAME: defensoria-middleware-prod
   REGION: us-central1
+  IMAGE_REPO: gcr.io/sat-defensoriapueblo/defensoria-middleware
+  CLOUDSQL_INSTANCE: sat-defensoriapueblo:us-central1:defensoria-db
 
 jobs:
   deploy:
@@ -23,22 +26,75 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        if: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER != '' && secrets.GCP_SERVICE_ACCOUNT != '' }}
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Authenticate to Google Cloud (Service Account Key)
+        if: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER == '' || secrets.GCP_SERVICE_ACCOUNT == '' }}
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SA_KEY }}
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
 
-      - name: Configure Docker for GCR
-        run: gcloud auth configure-docker
-
-      - name: Submit to Cloud Build
+      - name: Build container image (Cloud Build)
+        env:
+          IMAGE_TAG: ${{ github.sha }}
         run: |
+          set -euo pipefail
+          IMAGE="${IMAGE_REPO}:${IMAGE_TAG}"
+          echo "Building ${IMAGE}"
           gcloud builds submit \
-            --config=cloudbuild-deploy.yaml \
-            --project=$PROJECT_ID
+            --project="${PROJECT_ID}" \
+            --tag="${IMAGE}" \
+            --quiet
+
+      - name: Deploy to Cloud Run
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+          CLOUD_RUN_ENV_VARS: ${{ secrets.CLOUD_RUN_ENV_VARS }}
+        run: |
+          set -euo pipefail
+          IMAGE="${IMAGE_REPO}:${IMAGE_TAG}"
+
+          ARGS=(
+            run deploy "${SERVICE_NAME}"
+            --image "${IMAGE}"
+            --region "${REGION}"
+            --project "${PROJECT_ID}"
+            --platform managed
+            --execution-environment gen2
+            --allow-unauthenticated
+            --port 8080
+            --cpu 1
+            --memory 2Gi
+            --timeout 900
+            --concurrency 80
+            --min-instances 1
+            --max-instances 10
+            --cpu-boost
+            --quiet
+          )
+
+          if [[ -n "${CLOUDSQL_INSTANCE:-}" ]]; then
+            ARGS+=(--add-cloudsql-instances "${CLOUDSQL_INSTANCE}")
+          fi
+
+          if [[ -n "${CLOUD_RUN_ENV_VARS:-}" ]]; then
+            ARGS+=(--update-env-vars "${CLOUD_RUN_ENV_VARS}")
+          fi
+
+          # Give the container more time to boot if needed.
+          ARGS+=(--startup-probe "timeoutSeconds=5,periodSeconds=10,failureThreshold=24,tcpSocket.port=8080")
+
+          gcloud "${ARGS[@]}"
 
       - name: Verify deployment
         run: |
@@ -46,4 +102,14 @@ jobs:
             --region=$REGION \
             --format='value(status.url)')
           echo "Service URL: $URL"
-          curl -f "$URL/health" || exit 1
+          for i in $(seq 1 30); do
+            if curl -fsS "$URL/health" >/dev/null; then
+              echo "Health check OK"
+              exit 0
+            fi
+            echo "Health check not ready yet (attempt $i/30). Waiting 5s..."
+            sleep 5
+          done
+          echo "Health check failed after retries"
+          curl -v "$URL/health" || true
+          exit 1

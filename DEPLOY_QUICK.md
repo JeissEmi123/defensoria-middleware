@@ -15,11 +15,16 @@
 rm github-actions-key.json.  
 ```
 
+Alternativa recomendada (sin llaves, OIDC/WIF):
+```bash
+./setup-github-wif.sh --gh --project-number 411798681660
+```
+
 ### Desplegar
 ```bash
 git add .
 git commit -m "feat: descripcion del cambio"
-# El pipeline se dispara con push a master
+# El pipeline se dispara con push a master (o main)
 git push origin master
 ```
 
@@ -30,6 +35,9 @@ git push origin HEAD:master
 
 El despliegue se ejecutara automaticamente. Verifica en:
 - GitHub → Actions → Deploy to Cloud Run
+
+Opcional:
+- Si quieres que el pipeline actualice variables de entorno en cada deploy, crea el secret `CLOUD_RUN_ENV_VARS` (ver `.github/README.md`).
 
 ---
 

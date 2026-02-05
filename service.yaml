@@ -1,3 +1,4 @@
+# NOTE: Template file — do not commit production secrets here.
 apiVersion: serving.knative.dev/v1
 kind: Service
 metadata:
@@ -21,23 +22,23 @@ spec:
         - name: EMAIL_SERVICE
           value: none
         - name: SECRET_KEY
-          value: prod-secret-2026
+          value: REPLACE_ME
         - name: JWT_SECRET_KEY
-          value: jwt-prod-2026
+          value: REPLACE_ME
         - name: JWT_REFRESH_SECRET_KEY
-          value: jwt-refresh-prod-2026
+          value: REPLACE_ME
         - name: ADMIN_DEFAULT_PASSWORD
-          value: Admin2026!
+          value: REPLACE_ME
         - name: POSTGRES_USER
-          value: app_user
+          value: REPLACE_ME
         - name: POSTGRES_PASSWORD
-          value: AppUser2026!
+          value: REPLACE_ME
         - name: POSTGRES_DB
-          value: defensoria_db
+          value: REPLACE_ME
         - name: POSTGRES_PORT
           value: "5432"
         - name: DATABASE_URL
-          value: postgresql+asyncpg://app_user:AppUser2026!@/defensoria_db?host=/cloudsql/sat-defensoriapueblo:us-central1:defensoria-db
+          value: REPLACE_ME
         resources:
           limits:
             cpu: '2'

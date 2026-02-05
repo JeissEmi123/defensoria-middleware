@@ -2,7 +2,7 @@
 
 ## Configuración Inicial
 
-### 1. Crear Service Account en GCP
+### 1. Crear Service Account en GCP (opción rápida)
 
 ```bash
 # Crear service account
@@ -40,6 +40,36 @@ gcloud iam service-accounts keys create github-actions-key.json \
 4. Nombre: `GCP_SA_KEY`
 5. Valor: Pega el contenido completo del archivo `github-actions-key.json`
 6. Click en "Add secret"
+
+Alternativa (si usas GitHub CLI):
+```bash
+./setup-github-actions.sh --gh
+```
+
+### 2.1 (Opcional) Configurar variables de entorno de Cloud Run por Secret
+
+Si quieres que el pipeline actualice variables de entorno en cada despliegue, crea el secret:
+- Nombre: `CLOUD_RUN_ENV_VARS`
+- Valor recomendado: lista con delimitador custom para soportar comas dentro de valores (ej. JSON):
+
+```text
+^|^APP_ENV=production|EMAIL_SERVICE=none|LOG_LEVEL=INFO|DEBUG=false|ALLOWED_ORIGINS=["*"]
+```
+
+Nota: si `CLOUD_RUN_ENV_VARS` no existe, el workflow **no cambia** variables de entorno (usa las que ya estén configuradas en el servicio).
+
+### 3. (Recomendado) Workload Identity Federation (sin llaves)
+
+El workflow soporta OIDC/WIF si defines estos secrets:
+- `GCP_WORKLOAD_IDENTITY_PROVIDER`
+- `GCP_SERVICE_ACCOUNT`
+
+Esto evita usar `GCP_SA_KEY` (llaves de larga duración).
+
+Script de configuración (GCP + secrets en GitHub):
+```bash
+./setup-github-wif.sh --gh --repo JeissEmi123/defensoria-middleware --project-number 411798681660
+```
 
 ### 3. Activar el Pipeline
 

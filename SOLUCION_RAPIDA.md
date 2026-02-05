@@ -10,12 +10,12 @@ El despliegue en Cloud Run estaba fallando porque **el contenedor no iniciaba** 
 - Agregado `extra = "ignore"` en Config
 
 ### ✅ 2. Actualizado `cloudbuild-prod.yaml`  
-- Simplificadas variables de entorno
-- Removidas variables SMTP problemáticas
-- Configurado `EMAIL_SERVICE=none`
+- Removidos secretos hardcodeados del repo
+- El deploy no define variables sensibles (se gestionan en Cloud Run / Secrets)
+- Removidas variables SMTP problemáticas (mantener `EMAIL_SERVICE=none` si aplica)
 
 ### ✅ 3. Creado `.env.cloudrun`
-- Archivo de configuración limpio para Cloud Run
+- Plantilla de configuración para Cloud Run **sin secretos**
 
 ## 🚀 Para Desplegar AHORA
 
@@ -45,8 +45,8 @@ gcloud run services describe defensoria-middleware-prod --region=us-central1 --p
 | Archivo | Cambio |
 |---------|--------|
 | `app/config.py` | ✅ Agregadas variables SMTP + `extra="ignore"` |
-| `cloudbuild-prod.yaml` | ✅ Simplificadas variables de entorno |
-| `.env.cloudrun` | ✅ Creado archivo de configuración limpio |
+| `cloudbuild-prod.yaml` | ✅ Deploy sin secretos versionados |
+| `.env.cloudrun` | ✅ Plantilla sin secretos |
 | `deploy-prod.sh` | ✅ Script de despliegue automático |
 | `SOLUCION_DEPLOY_CLOUDRUN.md` | ✅ Documentación completa |
 

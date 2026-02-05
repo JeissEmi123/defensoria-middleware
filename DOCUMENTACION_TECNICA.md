@@ -135,22 +135,33 @@ python scripts/test_endpoints_sds.py
 Archivo: `.github/workflows/deploy.yml`
 
 Triggers:
-- `push` a la rama `master`.
+- `push` a la rama `master` o `main`.
 - `workflow_dispatch` manual.
 
 Secret requerido:
-- `GCP_SA_KEY` (JSON de service account en GitHub Secrets).
+- `GCP_SA_KEY` (JSON de service account en GitHub Secrets) **o** Workload Identity Federation:
+  - `GCP_WORKLOAD_IDENTITY_PROVIDER`
+  - `GCP_SERVICE_ACCOUNT`
+
+Secret opcional:
+- `CLOUD_RUN_ENV_VARS` (lista de env vars para `gcloud run deploy --update-env-vars`, recomendado con delimitador custom: `^|^KEY=VAL|KEY2=VAL2`).
 
 Configuracion del secret:
 ```bash
 ./setup-github-actions.sh
 ```
 
+Configuracion WIF (recomendado, sin llaves):
+```bash
+./setup-github-wif.sh --gh --project-number 411798681660
+```
+
 Flujo del pipeline:
 1. Checkout del codigo.
 2. Autenticacion en Google Cloud.
-3. `gcloud builds submit --config=cloudbuild-deploy.yaml`.
-4. Verificacion con `curl /health`.
+3. Build de imagen con Cloud Build (`gcloud builds submit --tag ...`).
+4. Deploy a Cloud Run con la imagen construida (`gcloud run deploy ...`).
+5. Verificacion con reintentos (`curl /health`).
 
 ### Cloud Build
 Archivo: `cloudbuild-deploy.yaml`
@@ -158,8 +169,7 @@ Archivo: `cloudbuild-deploy.yaml`
 Acciones principales:
 - Build de imagen Docker.
 - Push a Container Registry.
-- Deploy a Cloud Run `defensoria-middleware-prod` en `us-central1`.
-- Definicion de variables de entorno de produccion.
+- Deploy a Cloud Run `defensoria-middleware-prod` en `us-central1` (sin hardcodear secretos).
 
 ## Despliegue manual
 ```bash

@@ -6,20 +6,30 @@ Test simple del endpoint /api/v2/senales/consultar en producción
 import requests
 import json
 import sys
+import os
 
-BASE_URL_PROD = "https://defensoria-middleware-prod-411798681660.us-central1.run.app"
+BASE_URL_PROD = os.getenv(
+    "BASE_URL_PROD",
+    "https://defensoria-middleware-prod-411798681660.us-central1.run.app",
+)
+PROD_USERNAME = os.getenv("PROD_USERNAME", "admin")
+PROD_PASSWORD = os.getenv("PROD_PASSWORD")
 
 def main():
     print("=" * 70)
     print("🔧 TEST ENDPOINT SENALES - PRODUCCIÓN")
     print("=" * 70)
+
+    if not PROD_PASSWORD:
+        print("\n❌ Falta PROD_PASSWORD. Define PROD_PASSWORD (y opcionalmente PROD_USERNAME) y reintenta.")
+        return False
     
     # 1. Login
     print("\n1️⃣  Obteniendo token de autenticación...")
     try:
         resp = requests.post(
             f"{BASE_URL_PROD}/auth/login",
-            json={"username": "admin", "password": "Admin2025!"},
+            json={"username": PROD_USERNAME, "password": PROD_PASSWORD},
             timeout=30
         )
         
