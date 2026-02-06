@@ -1,213 +1,153 @@
-# Documentacion Tecnica - Defensoria Middleware
+# Documentación Técnica - Defensoría Middleware
 
 ## Metadatos
-- Version: 1.0
-- Fecha: 2026-02-04
-- Responsable: Equipo de desarrollo
+- Versión: 2.1
+- Fecha: 2026-02-06
+- Responsable: Equipo de Ingeniería
 
-## Proposito y alcance
-Este documento describe como descargar, ejecutar y operar localmente el middleware de la Defensoria. Incluye la descripcion del pipeline CI/CD y lineamientos de despliegue.
+## Para quién es este documento
+Este documento está pensado para arquitectos, líderes técnicos y devs que necesitan entender cómo está armado el servicio, cómo se configura y cómo se opera en local y en producción.
 
-## Resumen del sistema
-El proyecto es una API REST construida con FastAPI. Usa PostgreSQL como base de datos y Alembic para migraciones. En produccion se ejecuta en Cloud Run y se despliega con Cloud Build desde GitHub Actions.
+## Panorama rápido
+- API REST construida con FastAPI.
+- Autenticación JWT, RBAC y recuperación de contraseña.
+- PostgreSQL como base de datos.
+- Alembic para migraciones.
+- Docker para desarrollo local.
+- Cloud Build + Cloud Run para producción.
 
-## Repositorio
-```bash
-git clone https://github.com/JeissEmi123/defensoria-middleware.git
-cd defensoria-middleware
-```
+## Decisiones de arquitectura (resumen)
+- FastAPI por rendimiento y ergonomía en APIs asíncronas.
+- PostgreSQL por consistencia y consultas relacionales.
+- Alembic para controlar el ciclo de vida del esquema.
+- Docker para reproducibilidad en entornos locales.
+- Cloud Run para operación serverless con despliegue simple.
 
-## Requisitos
-- Python 3.11+
-- PostgreSQL 15+
-- Git
-- Docker y Docker Compose (opcional)
-- Google Cloud SDK (solo para despliegue manual)
+## Mapa rápido del repositorio
+- `app/main.py`: inicialización de FastAPI y registro de routers.
+- `app/api/`: endpoints por dominio funcional.
+- `app/services/`: lógica de negocio.
+- `app/database/`: modelos, repositorios y sesión de base de datos.
+- `alembic/`: migraciones y scripts.
+- `Dockerfile` y `docker-compose.yml`: entorno local.
+- `.github/workflows/deploy.yml`: CI/CD.
 
-## Preparacion de equipo nuevo (sin herramientas)
-1. Instalar Git y Docker.
-2. Verificar con el script:
-```bash
-./bootstrap.sh
-```
-3. Si falta algo, el script sugiere comandos segun el sistema operativo.
-4. Iniciar Docker Desktop (si aplica) antes de levantar la app.
+## Flujo de una solicitud
+1. Cliente invoca un endpoint HTTP.
+2. FastAPI enruta al router correspondiente.
+3. Servicios validan reglas y ejecutan la lógica de negocio.
+4. Repositorios acceden a PostgreSQL.
+5. Se retorna la respuesta JSON.
 
-## Arquitectura
+## Ejecución local
 
-### Componentes principales
-- API FastAPI en `app/main.py` y routers en `app/api`.
-- Modelos y capa de negocio en `app/`.
-- Migraciones en `alembic/`.
-- Contenedores en `Dockerfile` y `docker-compose.yml`.
-- Pipeline en `.github/workflows/deploy.yml` y `cloudbuild-deploy.yaml`.
-
-### Flujo de una solicitud
-1. El cliente consume un endpoint HTTP.
-2. FastAPI enruta la peticion al router correspondiente.
-3. La capa de negocio valida y procesa la operacion.
-4. Se consulta o actualiza PostgreSQL.
-5. Se responde JSON al cliente.
-
-## Ejecucion local
-
-### Comando unico (equipo nuevo)
-```bash
-./dev-up.sh
-```
-
-Este comando levanta la base de datos y la API con Docker y deja el servicio listo en `http://localhost:9000`.
-
-### Opcion A: Docker Compose
-```bash
-# Revisar y ajustar .env.docker si es necesario
-docker-compose up -d --build
-curl http://localhost:9000/health
-```
+### Opción recomendada (Docker)
+1. Verifica dependencias básicas con `./bootstrap.sh`.
+2. Levanta el stack con `./dev-up.sh`.
 
 Notas:
-- La API queda en `http://localhost:9000`.
-- Logs: `docker-compose logs -f app`.
-- Detener: `docker-compose down`.
+- `dev-up.sh` usa el archivo `.env.docker`.
+- El servidor queda en `http://localhost:9000`.
+- El `run.sh` ejecuta migraciones al iniciar el contenedor.
 
-### Opcion B: Manual (sin Docker)
+### Opción manual (sin Docker)
+Requisitos:
+- Python 3.11+
+- PostgreSQL 15+
+
+Pasos:
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 cp .env.example .env
+# Ajustar DATABASE_URL y credenciales locales en .env
 alembic upgrade head
 ./run.sh
 ```
 
-Requisitos adicionales:
-- PostgreSQL local corriendo.
-- `DATABASE_URL` en `.env` apuntando a la instancia local.
+Notas:
+- `run.sh` inicia Uvicorn en el puerto 9000.
+- Si ejecutas `python -m app.main`, el puerto por defecto es 8000.
 
-Verificacion:
-```bash
-curl http://localhost:9000/health
-```
+## Configuración
+La configuración se gestiona vía variables de entorno.
 
-Documentacion API local:
-- Swagger UI: `http://localhost:9000/docs`
-- ReDoc: `http://localhost:9000/redoc`
+Archivos relevantes:
+- `.env.docker`: valores locales para Docker.
+- `.env.example`: plantilla base para ejecución manual.
+- `.env.production`: referencia para producción.
 
-## Configuracion
-
-### Archivos de entorno
-- `.env.example`: plantilla base.
-- `.env.docker`: valores para Docker local.
-- `.env.production`: referencia de produccion.
-
-### Variables clave
+Variables mínimas para arrancar:
 - `DATABASE_URL`
+- `POSTGRES_USER`
+- `POSTGRES_PASSWORD`
+- `POSTGRES_DB`
+- `POSTGRES_PORT`
 - `SECRET_KEY`
 - `JWT_SECRET_KEY`
 - `JWT_REFRESH_SECRET_KEY`
-- `LOCAL_AUTH_ENABLED`
-- `ALLOWED_ORIGINS`
+- `ADMIN_DEFAULT_PASSWORD`
 
-## Migraciones
+Formatos importantes:
+- `ALLOWED_ORIGINS`: lista JSON, por ejemplo `["https://app.defensoria.gob.pe"]`.
+- `ALLOWED_HOSTS`: lista JSON o string único.
+
+## Base de datos y migraciones
+- PostgreSQL 15+.
+- Migraciones gestionadas con Alembic:
 ```bash
 alembic upgrade head
 ```
 
-Para crear una migracion:
+Para crear migraciones:
 ```bash
 alembic revision --autogenerate -m "descripcion"
 ```
 
-## Pruebas
-```bash
-pytest
-```
+## Seguridad
+- JWT con expiración configurable.
+- Rate limiting por endpoint.
+- Política de contraseñas y bloqueo por intentos fallidos.
+- Headers de seguridad en producción (configurable).
 
-Pruebas puntuales:
-```bash
-python scripts/test_endpoints_sds.py
-```
+## Observabilidad
+- Logs en stdout (Docker) y/o archivos si se configuran.
+- Health check en `/health`.
 
 ## CI/CD
 
-### Pipeline GitHub Actions
-Archivo: `.github/workflows/deploy.yml`
+### GitHub Actions
+- Workflow: `.github/workflows/deploy.yml`.
+- Autenticación recomendada: Workload Identity Federation (WIF/OIDC).
+- Alternativa: secret `GCP_SA_KEY`.
 
-Triggers:
-- `push` a la rama `master` o `main`.
-- `workflow_dispatch` manual.
+### Cloud Build / Cloud Run
+- Configuración principal: `cloudbuild-deploy.yaml`.
+- Servicio Cloud Run definido en `service.yaml`.
 
-Secret requerido:
-- `GCP_SA_KEY` (JSON de service account en GitHub Secrets) **o** Workload Identity Federation:
-  - `GCP_WORKLOAD_IDENTITY_PROVIDER`
-  - `GCP_SERVICE_ACCOUNT`
+## Despliegue
 
-Secret opcional:
-- `CLOUD_RUN_ENV_VARS` (lista de env vars para `gcloud run deploy --update-env-vars`, recomendado con delimitador custom: `^|^KEY=VAL|KEY2=VAL2`).
+### Automático (recomendado)
+- `push` a `main`/`master` dispara el workflow.
 
-Configuracion del secret:
-```bash
-./setup-github-actions.sh
-```
-
-Configuracion WIF (recomendado, sin llaves):
-```bash
-./setup-github-wif.sh --gh --project-number 411798681660
-```
-
-Flujo del pipeline:
-1. Checkout del codigo.
-2. Autenticacion en Google Cloud.
-3. Build de imagen con Cloud Build (`gcloud builds submit --tag ...`).
-4. Deploy a Cloud Run con la imagen construida (`gcloud run deploy ...`).
-5. Verificacion con reintentos (`curl /health`).
-
-### Cloud Build
-Archivo: `cloudbuild-deploy.yaml`
-
-Acciones principales:
-- Build de imagen Docker.
-- Push a Container Registry.
-- Deploy a Cloud Run `defensoria-middleware-prod` en `us-central1` (sin hardcodear secretos).
-
-## Despliegue manual
+### Manual
 ```bash
 gcloud builds submit --config=cloudbuild-deploy.yaml
 ```
 
-O usar el script:
-```bash
-./deploy-rapido.sh
-```
-
-## Operacion y monitoreo (runbook basico)
-- Health check: `GET /health`.
-- Logs en local: `docker-compose logs -f app`.
-- Logs en produccion: `gcloud run services logs read defensoria-middleware-prod --region=us-central1 --limit=50`.
-- Ver ultima revision: `gcloud run services describe defensoria-middleware-prod --region=us-central1`.
+## Operación
+- Logs locales: `docker-compose logs -f app`
+- Logs en producción: `gcloud run services logs read <servicio> --region=us-central1 --limit=50`
+- Revisiones: `gcloud run revisions list --service <servicio> --region=us-central1`
 
 ## Rollback
 ```bash
-gcloud run revisions list --service=defensoria-middleware-prod --region=us-central1
-gcloud run services update-traffic defensoria-middleware-prod \
-  --to-revisions=NOMBRE_REVISION_ANTERIOR=100 \
+gcloud run services update-traffic <servicio> \
+  --to-revisions=<revision>=100 \
   --region=us-central1
 ```
-
-## Seguridad y secretos
-- No versionar credenciales en el repositorio.
-- Usar GitHub Secrets para `GCP_SA_KEY`.
-- Rotar secretos si se exponen o se comparten.
-- Considerar Secret Manager para variables sensibles en produccion.
-
-## Checklist de entrega
-1. Codigo actualizado y con commit.
-2. Migraciones revisadas y aplicadas en local.
-3. Variables de entorno documentadas.
-4. Pipeline CI/CD verificado.
-5. Health check funcional en local y produccion.
-6. URL de produccion confirmada.
 
 ## Referencias
 - `LOCAL_SETUP.md`

@@ -1,8 +1,8 @@
 # Defensoria Middleware
 
-API REST construida con FastAPI para la Defensoria del Pueblo. Incluye autenticacion, gestion de usuarios y endpoints operativos. Se ejecuta localmente con Docker y se despliega en Cloud Run mediante GitHub Actions y Cloud Build.
+Este repositorio contiene la API REST para la gestión de señales (SDS), parámetros y catálogos asociados. Incluye autenticación JWT, RBAC y recuperación de contraseña. El uso recomendado es local con Docker y despliegue en Cloud Run.
 
-## Inicio rapido
+## Inicio rápido (local con Docker)
 ```bash
 ./bootstrap.sh
 ./dev-up.sh
@@ -10,30 +10,31 @@ API REST construida con FastAPI para la Defensoria del Pueblo. Incluye autentica
 
 La API queda en `http://localhost:9000` y el health check en `http://localhost:9000/health`.
 
-## Documentacion principal
-- `DOCUMENTACION_TECNICA.md`: arquitectura, requisitos, ejecucion local, CI/CD, seguridad y rollback.
-- `LOCAL_SETUP.md`: guia detallada para entorno local.
-- `DEPLOY_QUICK.md`: flujo rapido de despliegue.
-- `.github/README.md`: configuracion de CI/CD (GitHub Actions, secretos, WIF/OIDC).
+## Documentación clave
+- `DOCUMENTACION_TECNICA.md` (arquitectura, configuración, ejecución, CI/CD, operación)
+- `LOCAL_SETUP.md` (instalación local para máquina limpia)
+- `DOCUMENTACION_FUNCIONAL.md` (flujos funcionales y alcance)
+- `API_DOCUMENTATION.md` (resumen de endpoints y uso de `/docs`)
+- `DEPLOY_QUICK.md` (despliegue rápido)
+- `DEPLOYMENT_GUIDE.md` (despliegue detallado)
+- `TROUBLESHOOTING.md` (diagnóstico y resolución)
+- `docs/` (configuración de email y credenciales)
 
-## Arquitectura (resumen)
-- FastAPI como framework principal.
-- PostgreSQL como base de datos.
-- Alembic para migraciones.
-- Docker para entorno local.
-- Cloud Run para produccion.
+## Documentación interactiva de API
+- Swagger UI: `http://localhost:9000/docs`
+- ReDoc: `http://localhost:9000/redoc`
 
-## Operacion (runbook basico)
-- Health check: `GET /health`.
-- Logs en local: `docker-compose logs -f app`.
-- Logs en produccion: `gcloud run services logs read defensoria-middleware-prod --region=us-central1 --limit=50`.
-- Rollback: ver `DOCUMENTACION_TECNICA.md`.
+## Arquitectura (muy breve)
+- FastAPI + SQLAlchemy + Alembic
+- PostgreSQL
+- Docker para desarrollo local
+- Cloud Run para producción
 
-## Soporte
-Revisa `TROUBLESHOOTING.md` para diagnostico y soluciones comunes.
+## Operación básica
+- Health check: `GET /health`
+- Logs locales: `docker-compose logs -f app`
+- Logs en producción: `gcloud run services logs read <servicio> --region=us-central1 --limit=50`
 
-## CI/CD (Produccion)
-- Workflow: `.github/workflows/deploy.yml`.
-- Se dispara con `push` a `master`/`main` o manualmente con `workflow_dispatch`.
-- Auth recomendado (sin llaves): `./setup-github-wif.sh --gh --project-number 411798681660`.
-- Auth alternativa: secret `GCP_SA_KEY` (ver `.github/README.md`).
+## CI/CD
+- Workflow: `.github/workflows/deploy.yml`
+- Configuración de GitHub Actions: `.github/README.md`
